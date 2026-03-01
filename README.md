@@ -392,7 +392,7 @@ The binding enforces a maximum of 5 API requests per 60 seconds. If you operate 
 ### `ankersolix.things`
 
 ```java
-Bridge ankersolix:account:home "Anker Account" [
+Bridge ankersolix:account:myaccount "Anker Account" [
     email="user@example.com",
     password="secret",
     country="DE",
@@ -400,7 +400,7 @@ Bridge ankersolix:account:home "Anker Account" [
     restPollingInterval=120,
     enableMqtt=true
 ] {
-    Thing solarbank sb1 "Solarbank 3 Pro" [
+    Thing solarbank mysolarbank "Solarbank 3 Pro" [
         siteId="ABC123DEF456",
         deviceSn="SN1234567890"
     ]
@@ -413,57 +413,57 @@ Bridge ankersolix:account:home "Anker Account" [
 Group gSolarbank "Solarbank 3 Pro" <energy>
 
 // Power overview (MQTT real-time)
-Number:Power       SB_PV_Power        "PV Power [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#photovoltaic-power" }
-Number:Power       SB_Output          "Output [%.0f W]"              <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#output-power" }
-Number:Power       SB_AC_Output       "AC Output [%.0f W]"           <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#ac-output-power" }
-Number:Power       SB_Home_Demand     "Home Demand [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#home-demand" }
+Number:Power       SB_PV_Power        "PV Power [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:power#photovoltaic-power" }
+Number:Power       SB_Output          "Output [%.0f W]"              <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:power#output-power" }
+Number:Power       SB_AC_Output       "AC Output [%.0f W]"           <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:power#ac-output-power" }
+Number:Power       SB_Home_Demand     "Home Demand [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:power#home-demand" }
 
 // Solar strings (MQTT real-time)
-Number:Power       SB_PV1             "PV String 1 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv1-power" }
-Number:Power       SB_PV2             "PV String 2 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv2-power" }
-Number:Power       SB_PV3             "PV String 3 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv3-power" }
-Number:Power       SB_PV4             "PV String 4 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv4-power" }
+Number:Power       SB_PV1             "PV String 1 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv1-power" }
+Number:Power       SB_PV2             "PV String 2 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv2-power" }
+Number:Power       SB_PV3             "PV String 3 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv3-power" }
+Number:Power       SB_PV4             "PV String 4 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv4-power" }
 
 // Battery (MQTT real-time)
-Number:Power       SB_Bat_Power       "Battery [%.0f W]"             <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:battery#battery-power" }
-Number             SB_Bat_SOC         "SOC [%.0f %%]"                <battery> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:battery#battery-soc" }
-Number:Temperature SB_Temperature     "Temperature [%.1f °C]"        <temperature> (gSolarbank) { channel="ankersolix:solarbank:home:sb1:battery#temperature" }
+Number:Power       SB_Bat_Power       "Battery [%.0f W]"             <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:battery#battery-power" }
+Number             SB_Bat_SOC         "SOC [%.0f %%]"                <battery> (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:battery#battery-soc" }
+Number:Temperature SB_Temperature     "Temperature [%.1f °C]"        <temperature> (gSolarbank) { channel="ankersolix:solarbank:myaccount:mysolarbank:battery#temperature" }
 
 // Grid (MQTT real-time)
-Number:Power       SB_Grid            "Grid [%.0f W]"                <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:grid#grid-power" }
+Number:Power       SB_Grid            "Grid [%.0f W]"                <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:grid#grid-power" }
 
 // Energy - lifetime totals (MQTT)
-Number:Energy      SB_PV_Yield        "PV Yield Total [%.2f kWh]"    <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#pv-yield" }
-Number:Energy      SB_Charged         "Charged Total [%.2f kWh]"     <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#charged-energy" }
-Number:Energy      SB_Discharged      "Discharged Total [%.2f kWh]"  <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#discharged-energy" }
+Number:Energy      SB_PV_Yield        "PV Yield Total [%.2f kWh]"    <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#pv-yield" }
+Number:Energy      SB_Charged         "Charged Total [%.2f kWh]"     <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#charged-energy" }
+Number:Energy      SB_Discharged      "Discharged Total [%.2f kWh]"  <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#discharged-energy" }
 
 // Energy - daily counters (REST)
-Number:Energy      SB_Daily_Solar     "Today Solar [%.2f kWh]"       <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-solar" }
-Number:Energy      SB_Daily_Charge    "Today Charge [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-charge" }
-Number:Energy      SB_Daily_Discharge "Today Discharge [%.2f kWh]"   <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-discharge" }
-Number:Energy      SB_Daily_Import    "Today Import [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-grid-import" }
-Number:Energy      SB_Daily_Export    "Today Export [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-grid-export" }
+Number:Energy      SB_Daily_Solar     "Today Solar [%.2f kWh]"       <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-solar" }
+Number:Energy      SB_Daily_Charge    "Today Charge [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-charge" }
+Number:Energy      SB_Daily_Discharge "Today Discharge [%.2f kWh]"   <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-discharge" }
+Number:Energy      SB_Daily_Import    "Today Import [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-grid-import" }
+Number:Energy      SB_Daily_Export    "Today Export [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-grid-export" }
 
 // MQTT settings (require enableMqtt=true)
-Number             SB_Min_SOC         "Min SOC [%.0f %%]"            <battery> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#min-soc" }
-Number:Power       SB_Max_Load        "Max Load [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#max-load" }
-Switch             SB_AC_Socket       "AC Socket"                    <switch>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#ac-socket-switch" }
-Number:Power       SB_AC_Limit_MQTT   "AC Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#ac-input-limit" }
-Switch             SB_Disable_Export  "Disable Grid Export"          <switch>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#disable-grid-export" }
-Number:Power       SB_PV_Limit        "PV Limit [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#pv-limit" }
-Switch             SB_Light           "Status Light"                 <light>   (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#light-switch" }
+Number             SB_Min_SOC         "Min SOC [%.0f %%]"            <battery> (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#min-soc" }
+Number:Power       SB_Max_Load        "Max Load [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#max-load" }
+Switch             SB_AC_Socket       "AC Socket"                    <switch>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#ac-socket-switch" }
+Number:Power       SB_AC_Limit_MQTT   "AC Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#ac-input-limit" }
+Switch             SB_Disable_Export  "Disable Grid Export"          <switch>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#disable-grid-export" }
+Number:Power       SB_PV_Limit        "PV Limit [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#pv-limit" }
+Switch             SB_Light           "Status Light"                 <light>   (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#light-switch" }
 
 // REST controls (work without MQTT)
-Number:Power       SB_Home_Load       "Home Load [%.0f W]"           <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#home-load" }
-Number:Power       SB_Output_Limit    "Output Limit [%.0f W]"        <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#output-limit" }
-Number:Power       SB_PV_Input_Limit  "PV Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#pv-input-limit" }
-Number:Power       SB_AC_Input_Limit  "AC Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#ac-input-limit" }
-Switch             SB_Grid_Export     "Grid Export"                  <switch>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#grid-export-switch" }
+Number:Power       SB_Home_Load       "Home Load [%.0f W]"           <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#home-load" }
+Number:Power       SB_Output_Limit    "Output Limit [%.0f W]"        <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#output-limit" }
+Number:Power       SB_PV_Input_Limit  "PV Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#pv-input-limit" }
+Number:Power       SB_AC_Input_Limit  "AC Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#ac-input-limit" }
+Switch             SB_Grid_Export     "Grid Export"                  <switch>  (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#grid-export-switch" }
 
 // Device info
-String             SB_Firmware        "Firmware [%s]"                <text>    (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:info#firmware-version" }
-Switch             SB_Online          "Online"                       <network> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:info#online-status" }
-DateTime           SB_Last_Update     "Last Update [%1$tF %1$tR]"    <time>    (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:info#last-update" }
+String             SB_Firmware        "Firmware [%s]"                <text>    (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:info#firmware-version" }
+Switch             SB_Online          "Online"                       <network> (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:info#online-status" }
+DateTime           SB_Last_Update     "Last Update [%1$tF %1$tR]"    <time>    (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:info#last-update" }
 ```
 
 ### `ankersolix.sitemap`

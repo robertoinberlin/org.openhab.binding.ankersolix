@@ -1,0 +1,75 @@
+// ---------------------------------------------------------------------------
+// Anker Solix Solarbank – Adjust output to match home demand
+// ---------------------------------------------------------------------------
+// Watches SB_Home_Demand (real-time home consumption from MQTT) and adjusts
+// SB_Home_Load (REST output setting) upward when demand has exceeded the
+// current output continuously for 2 minutes.  If demand drops back below
+// the current load at any point, the timer resets.
+//
+// Requires items: SB_Home_Demand, SB_Home_Load  (see README.md Full Example)
+// ---------------------------------------------------------------------------
+
+var Timer adjustTimer = null
+var boolean demandExceeded = false
+
+rule "Adjust Solarbank output to home demand"
+when
+    Item SB_Home_Demand changed
+then
+
+    if (SB_Home_Demand.state == NULL || SB_Home_Demand.state == UNDEF
+        || SB_Home_Load.state == NULL || SB_Home_Load.state == UNDEF) {
+        return;
+    }
+
+
+
+    val demand  = (SB_Home_Demand.state as QuantityType<Power>).intValue
+    val current = (SB_Home_Load.state as QuantityType<Power>).intValue
+
+    if (demand > current) {
+        if (!demandExceeded) {
+            // First time demand crosses above load – start the 2-minute window
+            demandExceeded = true
+            adjustTimer = createTimer(now.plusMinutes(2)) [|
+                adjustTimer = null
+                demandExceeded = false
+
+                if (SB_Home_Demand.state == NULL || SB_Home_Demand.state == UNDEF) {
+                    return;
+                }
+                val d = (SB_Home_Demand.state as QuantityType<Power>).intValue
+
+                // Round down to nearest 50 W step, clamp to 0–800 W
+                var target = Math.min(800, Math.max(0, (d / 50) * 50))
+
+                if(target <200 ) {
+                    traget = 200
+                }
+
+                if(target > 1200 ) {
+                    target = 1200
+                }
+
+                if (SB_Home_Load.state == NULL || SB_Home_Load.state == UNDEF) {}
+                    return;
+                }
+
+
+                if (SB_Home_Load.state == NULL || SB_Home_Load.state == UNDEF
+                    || (SB_Home_Load.state as QuantityType<Power>).intValue != target) {
+                    SB_Home_Load.sendCommand(target)
+                    logInfo("solarbank", "Adjusted home load to {} W (demand steady at {} W for 2 min)", target, d)
+                }
+            ]
+        }
+        // else: demand still above load, timer already running – do nothing
+    } else {
+        // Demand dropped back below current output – cancel and reset
+        if (adjustTimer !== null) {
+            adjustTimer.cancel()
+            adjustTimer = null
+        }
+        demandExceeded = false
+    }
+end
