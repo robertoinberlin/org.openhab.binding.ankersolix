@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
+import com.google.gson.JsonObject;
 import org.openhab.binding.ankersolix.internal.api.AnkerSolixApiClient;
 import org.openhab.binding.ankersolix.internal.api.AnkerSolixAuth;
 import org.openhab.binding.ankersolix.internal.api.dto.MqttInfoResponse;
@@ -158,13 +159,25 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
                 client.authenticate();
             }
 
-            // Poll each registered child handler's site
             for (Map.Entry<String, SolarbankHandler> entry : childHandlers.entrySet()) {
                 SolarbankHandler handler = entry.getValue();
                 String siteId = handler.getSiteId();
                 if (siteId != null) {
-                    SiteHomepageResponse homepage = client.getSiteHomepage(siteId);
-                    handler.updateFromRest(homepage);
+                    // Use HES endpoint for Solarbank 3 Pro (get_site_homepage doesn't return
+                    // device data for HES systems)
+                    try {
+                        JsonObject hesData = client.getSystemRunningInfo(siteId);
+                        handler.updateFromHes(hesData);
+                    } catch (Exception e) {
+                        logger.debug("Failed to get HES system running info: {}", e.getMessage());
+                        // Fallback: try legacy homepage endpoint
+                        try {
+                            SiteHomepageResponse homepage = client.getSiteHomepage(siteId);
+                            handler.updateFromRest(homepage);
+                        } catch (Exception e2) {
+                            logger.debug("Fallback homepage also failed: {}", e2.getMessage());
+                        }
+                    }
 
                     // Every 5th poll: get device params and device attributes
                     if (pollCount % 5 == 0) {

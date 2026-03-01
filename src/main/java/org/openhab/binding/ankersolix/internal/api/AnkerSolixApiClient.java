@@ -135,7 +135,7 @@ public class AnkerSolixApiClient {
     public JsonObject getDeviceParam(String siteId, int paramType) throws Exception {
         JsonObject body = new JsonObject();
         body.addProperty("site_id", siteId);
-        body.addProperty("param_type", paramType);
+        body.addProperty("param_type", String.valueOf(paramType));
         return postAuthenticated(ApiEndpoints.GET_DEVICE_PARAM, body,
                 new TypeToken<ApiResponse<JsonObject>>() {
                 }.getType());
@@ -319,7 +319,7 @@ public class AnkerSolixApiClient {
         int statusCode = httpResponse.getStatus();
         String responseBody = httpResponse.getContentAsString();
 
-        logger.trace("Response status={} body={}", statusCode, responseBody);
+        logger.trace("Response {} status={} body={}", endpoint, statusCode, responseBody);
 
         if (statusCode == 429) {
             logger.warn("Rate limited (429), waiting 65 seconds...");

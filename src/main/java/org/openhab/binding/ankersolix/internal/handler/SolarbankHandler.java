@@ -253,12 +253,76 @@ public class SolarbankHandler extends BaseThingHandler {
     }
 
     /**
+     * Update channels from HES (Home Energy System) running info response.
+     * This is the primary REST data source for Solarbank 3 Pro devices.
+     */
+    public void updateFromHes(JsonObject hesData) {
+
+        // Try to extract power values from known HES fields
+        updateHesNumber(hesData, "solar_power", GROUP_POWER, CHANNEL_PV_POWER, Units.WATT);
+        updateHesNumber(hesData, "photovoltaic_power", GROUP_POWER, CHANNEL_PV_POWER, Units.WATT);
+        updateHesNumber(hesData, "pv_power", GROUP_POWER, CHANNEL_PV_POWER, Units.WATT);
+
+        updateHesNumber(hesData, "output_power", GROUP_POWER, CHANNEL_OUTPUT_POWER, Units.WATT);
+        updateHesNumber(hesData, "home_load_power", GROUP_POWER, CHANNEL_OUTPUT_POWER, Units.WATT);
+
+        updateHesNumber(hesData, "ac_output_power", GROUP_POWER, CHANNEL_AC_OUTPUT_POWER, Units.WATT);
+        updateHesNumber(hesData, "home_usage_power", GROUP_POWER, CHANNEL_HOME_DEMAND, Units.WATT);
+        updateHesNumber(hesData, "home_demand", GROUP_POWER, CHANNEL_HOME_DEMAND, Units.WATT);
+
+        updateHesNumber(hesData, "battery_power", GROUP_BATTERY, CHANNEL_BATTERY_POWER, Units.WATT);
+        updateHesNumber(hesData, "battery_soc", GROUP_BATTERY, CHANNEL_BATTERY_SOC, Units.PERCENT);
+        updateHesNumber(hesData, "soc", GROUP_BATTERY, CHANNEL_BATTERY_SOC, Units.PERCENT);
+
+        updateHesNumber(hesData, "grid_power", GROUP_GRID, CHANNEL_GRID_POWER, Units.WATT);
+        updateHesNumber(hesData, "grid_to_home_power", GROUP_GRID, CHANNEL_GRID_POWER, Units.WATT);
+
+        // Energy
+        updateHesNumber(hesData, "solar_production", GROUP_ENERGY, CHANNEL_DAILY_SOLAR, Units.KILOWATT_HOUR);
+        updateHesNumber(hesData, "battery_charge", GROUP_ENERGY, CHANNEL_DAILY_CHARGE, Units.KILOWATT_HOUR);
+        updateHesNumber(hesData, "battery_discharge", GROUP_ENERGY, CHANNEL_DAILY_DISCHARGE, Units.KILOWATT_HOUR);
+        updateHesNumber(hesData, "grid_import", GROUP_ENERGY, CHANNEL_DAILY_GRID_IMPORT, Units.KILOWATT_HOUR);
+        updateHesNumber(hesData, "grid_export", GROUP_ENERGY, CHANNEL_DAILY_GRID_EXPORT, Units.KILOWATT_HOUR);
+
+        // Firmware / device info from nested objects
+        if (hesData.has("firmware_version")) {
+            updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_FIRMWARE_VERSION),
+                    new StringType(hesData.get("firmware_version").getAsString()));
+        }
+        if (hesData.has("sw_version")) {
+            updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_FIRMWARE_VERSION),
+                    new StringType(hesData.get("sw_version").getAsString()));
+        }
+
+        // Last update timestamp
+        updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_LAST_UPDATE),
+                new DateTimeType(ZonedDateTime.now()));
+        updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_ONLINE_STATUS), OnOffType.ON);
+        updateStatus(ThingStatus.ONLINE);
+    }
+
+    private void updateHesNumber(JsonObject data, String jsonKey, String group, String channel,
+            javax.measure.Unit<?> unit) {
+        if (data.has(jsonKey)) {
+            try {
+                double value = data.get(jsonKey).getAsDouble();
+                updateState(new ChannelUID(getThing().getUID(), group, channel), new QuantityType<>(value, unit));
+            } catch (Exception e) {
+                logger.trace("Failed to parse HES field {}: {}", jsonKey, e.getMessage());
+            }
+        }
+    }
+
+    /**
      * Update settings channels from REST device params response.
+     * The API wraps the data as: {"param_data": "{\"soc_list\":[...]}"}
      */
     public void updateSettingsFromRest(JsonObject params) {
-        if (params.has("soc_list")) {
+        JsonObject data = unwrapParamData(params);
+
+        if (data.has("soc_list")) {
             try {
-                var socList = params.getAsJsonArray("soc_list");
+                var socList = data.getAsJsonArray("soc_list");
                 for (var element : socList) {
                     var socObj = element.getAsJsonObject();
                     if (socObj.has("is_selected") && socObj.get("is_selected").getAsInt() == 1) {
@@ -270,6 +334,12 @@ public class SolarbankHandler extends BaseThingHandler {
             } catch (Exception e) {
                 logger.debug("Failed to parse SOC list from device params: {}", e.getMessage());
             }
+        }
+
+        if (data.has("switch_0w")) {
+            boolean exportDisabled = data.get("switch_0w").getAsInt() != 0;
+            updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_GRID_EXPORT),
+                    exportDisabled ? OnOffType.OFF : OnOffType.ON);
         }
     }
 
@@ -352,8 +422,12 @@ public class SolarbankHandler extends BaseThingHandler {
 
     /**
      * Update REST control channel states from device attributes.
+     * The API returns: {"device_sn":"...", "attributes":{"pv_power_limit":3600,...}}
      */
-    public void updateRestControlFromAttributes(JsonObject attrs) {
+    public void updateRestControlFromAttributes(JsonObject data) {
+        // Unwrap the "attributes" object if present
+        JsonObject attrs = data.has("attributes") ? data.getAsJsonObject("attributes") : data;
+
         if (attrs.has("power_limit")) {
             updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_OUTPUT_LIMIT),
                     new QuantityType<>(attrs.get("power_limit").getAsDouble(), Units.WATT));
@@ -376,12 +450,32 @@ public class SolarbankHandler extends BaseThingHandler {
 
     /**
      * Update home load channel state from device param response.
+     * The API wraps the data as: {"param_data": "{\"default_home_load\":200,...}"}
      */
-    public void updateHomeLoadFromParam(JsonObject paramData) {
-        if (paramData.has("default_home_load")) {
+    public void updateHomeLoadFromParam(JsonObject paramResponse) {
+        JsonObject data = unwrapParamData(paramResponse);
+
+        if (data.has("default_home_load")) {
+            double homeLoad = data.get("default_home_load").getAsDouble();
             updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_HOME_LOAD),
-                    new QuantityType<>(paramData.get("default_home_load").getAsDouble(), Units.WATT));
+                    new QuantityType<>(homeLoad, Units.WATT));
         }
+    }
+
+    /**
+     * Unwrap param_data: the API returns {"param_data": "{json string}"}.
+     * If param_data is a JSON string, parse it. Otherwise return the object as-is.
+     */
+    private JsonObject unwrapParamData(JsonObject response) {
+        if (response.has("param_data")) {
+            try {
+                String paramDataStr = response.get("param_data").getAsString();
+                return new com.google.gson.JsonParser().parse(paramDataStr).getAsJsonObject();
+            } catch (Exception e) {
+                logger.debug("Failed to unwrap param_data: {}", e.getMessage());
+            }
+        }
+        return response;
     }
 
     public @Nullable String getSiteId() {

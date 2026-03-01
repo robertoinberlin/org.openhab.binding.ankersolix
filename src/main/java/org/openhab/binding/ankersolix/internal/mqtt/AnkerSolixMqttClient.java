@@ -13,8 +13,6 @@
 package org.openhab.binding.ankersolix.internal.mqtt;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyStore;
@@ -88,12 +86,18 @@ public class AnkerSolixMqttClient implements MqttCallback {
 
         MqttConnectOptions options = new MqttConnectOptions();
         options.setSocketFactory(sslFactory);
+        // Set the real ssl:// URI via setServerURIs to bypass the MqttClient constructor's
+        // ServiceLoader-based URI scheme validation, which fails in OSGi environments
+        // because the embedded Paho JAR's META-INF/services entries are not visible.
+        options.setServerURIs(new String[] { brokerUrl });
         options.setCleanSession(true);
         options.setKeepAliveInterval(60);
         options.setConnectionTimeout(30);
         options.setAutomaticReconnect(true);
 
-        MqttClient mqttClient = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
+        // Use tcp:// placeholder in constructor to avoid ServiceLoader validation;
+        // the actual ssl:// URI from setServerURIs() is used at connect time.
+        MqttClient mqttClient = new MqttClient("tcp://localhost:1883", clientId, new MemoryPersistence());
         mqttClient.setCallback(this);
         mqttClient.connect(options);
 
@@ -110,7 +114,8 @@ public class AnkerSolixMqttClient implements MqttCallback {
             return;
         }
 
-        String topic = "dt/" + appName + "/" + productCode + "/" + deviceSn + "/";
+        // Use # wildcard to catch all subtopics for this device
+        String topic = "dt/" + appName + "/" + productCode + "/" + deviceSn + "/#";
         mqttClient.subscribe(topic, 0);
         logger.debug("Subscribed to MQTT topic: {}", topic);
 
@@ -202,16 +207,21 @@ public class AnkerSolixMqttClient implements MqttCallback {
             return;
         }
 
+        logger.trace("MQTT message on topic: {}, size: {} bytes", topic, message.getPayload().length);
+
         try {
             String jsonStr = new String(message.getPayload(), StandardCharsets.UTF_8);
+
             JsonObject json = gson.fromJson(jsonStr, JsonObject.class);
             if (json == null) {
+                logger.debug("MQTT: failed to parse JSON");
                 return;
             }
 
             // Extract device info from topic: dt/{app}/{product}/{sn}/
             String[] topicParts = topic.split("/");
             if (topicParts.length < 4) {
+                logger.debug("MQTT: unexpected topic format: {}", topic);
                 return;
             }
             String productCode = topicParts[2];
@@ -220,11 +230,13 @@ public class AnkerSolixMqttClient implements MqttCallback {
             // Extract payload -> data (base64 encoded binary)
             String payloadStr = json.has("payload") ? json.get("payload").getAsString() : "";
             if (payloadStr.isEmpty()) {
+                logger.debug("MQTT: no payload field in message");
                 return;
             }
 
             JsonObject payload = gson.fromJson(payloadStr, JsonObject.class);
             if (payload == null || !payload.has("data")) {
+                logger.debug("MQTT: no data field in payload: {}", payloadStr);
                 return;
             }
 
@@ -236,7 +248,7 @@ public class AnkerSolixMqttClient implements MqttCallback {
                 listener.onDeviceUpdate(deviceSn, fields);
             }
         } catch (Exception e) {
-            logger.debug("Error processing MQTT message: {}", e.getMessage());
+            logger.debug("Error processing MQTT message: {}", e.getMessage(), e);
         }
     }
 
@@ -251,7 +263,7 @@ public class AnkerSolixMqttClient implements MqttCallback {
         try {
             byte[] payload = commandBuilder.buildRealtimeTrigger(REALTIME_TRIGGER_TIMEOUT_SECONDS);
             publishCommand(deviceSn, productCode, payload);
-            logger.trace("Sent realtime trigger for {}", deviceSn);
+            logger.debug("Sent realtime trigger for {} (timeout={}s)", deviceSn, REALTIME_TRIGGER_TIMEOUT_SECONDS);
         } catch (Exception e) {
             logger.debug("Failed to send realtime trigger: {}", e.getMessage());
         }
