@@ -126,51 +126,51 @@ Bridge ankersolix:account:myaccount "Anker Account" [
 The following table lists all available items with their types, data sources, and descriptions.
 Channel IDs use the format `ankersolix:solarbank:<bridge>:<thing>:<channel>`.
 
-| Item Name | Item Type | Channel | Source | R/W | Description |
-|-----------|-----------|---------|--------|-----|-------------|
-| **Power** | | | | | |
-| `Solarbank_PV_Power` | Number:Power | `power#photovoltaic-power` | MQTT | R | Total photovoltaic generation in watts |
-| `Solarbank_Output_Power` | Number:Power | `power#output-power` | MQTT | R | Total output power to home in watts |
-| `Solarbank_AC_Output` | Number:Power | `power#ac-output-power` | MQTT | R | AC output power (signed) in watts |
-| `Solarbank_Home_Demand` | Number:Power | `power#home-demand` | MQTT | R | Total home power demand in watts |
-| **Solar Strings** | | | | | |
-| `Solarbank_PV1` | Number:Power | `solar#pv1-power` | MQTT | R | MPPT string 1 power in watts |
-| `Solarbank_PV2` | Number:Power | `solar#pv2-power` | MQTT | R | MPPT string 2 power in watts |
-| `Solarbank_PV3` | Number:Power | `solar#pv3-power` | MQTT | R | MPPT string 3 power in watts |
-| `Solarbank_PV4` | Number:Power | `solar#pv4-power` | MQTT | R | MPPT string 4 power in watts |
-| **Battery** | | | | | |
+| Item Name | Item Type | Channel | Source | R/W | Description                                                   |
+|-----------|-----------|---------|--------|-----|---------------------------------------------------------------|
+| **Power** | | | | |                                                               |
+| `Solarbank_PV_Power` | Number:Power | `power#photovoltaic-power` | MQTT | R | Total photovoltaic generation in watts                        |
+| `Solarbank_Output_Power` | Number:Power | `power#output-power` | MQTT | R | Current output power to home in watts                         |
+| `Solarbank_AC_Output` | Number:Power | `power#ac-output-power` | MQTT | R | AC output power (signed) in watts                             |
+| `Solarbank_Home_Demand` | Number:Power | `power#home-demand` | MQTT | R | Total home power demand in watts                              |
+| **Solar Strings** | | | | |                                                               |
+| `Solarbank_PV1` | Number:Power | `solar#pv1-power` | MQTT | R | MPPT string 1 power in watts  (solar inout #1)                |
+| `Solarbank_PV2` | Number:Power | `solar#pv2-power` | MQTT | R | MPPT string 2 power in watts  (solar inout #12)               |
+| `Solarbank_PV3` | Number:Power | `solar#pv3-power` | MQTT | R | MPPT string 3 power in watts  (solar inout #3)                |
+| `Solarbank_PV4` | Number:Power | `solar#pv4-power` | MQTT | R | MPPT string 4 power in watts (solar inout #4)                 |
+| **Battery** | | | | |                                                               |
 | `Solarbank_Battery_Power` | Number:Power | `battery#battery-power` | MQTT | R | Battery charge/discharge power (+charge, -discharge) in watts |
-| `Solarbank_Battery_SOC` | Number:Dimensionless | `battery#battery-soc` | MQTT | R | Battery state of charge (0–100 %) |
-| `Solarbank_Temperature` | Number:Temperature | `battery#temperature` | MQTT | R | Battery temperature in °C |
-| **Grid** | | | | | |
-| `Solarbank_Grid_Power` | Number:Power | `grid#grid-power` | MQTT | R | Grid power (+import, -export) in watts |
-| **Energy** | | | | | |
-| `Solarbank_PV_Yield` | Number:Energy | `energy#pv-yield` | MQTT | R | Total lifetime PV energy yield in kWh |
-| `Solarbank_Charged_Energy` | Number:Energy | `energy#charged-energy` | MQTT | R | Total lifetime energy charged to battery in kWh |
-| `Solarbank_Discharged_Energy` | Number:Energy | `energy#discharged-energy` | MQTT | R | Total lifetime energy discharged from battery in kWh |
-| `Solarbank_Daily_Solar` | Number:Energy | `energy#daily-solar` | REST | R | Solar generation today in kWh |
-| `Solarbank_Daily_Charge` | Number:Energy | `energy#daily-charge` | REST | R | Battery charge today in kWh |
-| `Solarbank_Daily_Discharge` | Number:Energy | `energy#daily-discharge` | REST | R | Battery discharge today in kWh |
-| `Solarbank_Daily_Import` | Number:Energy | `energy#daily-grid-import` | REST | R | Grid import today in kWh |
-| `Solarbank_Daily_Export` | Number:Energy | `energy#daily-grid-export` | REST | R | Grid export today in kWh |
-| **Settings (MQTT)** | | | | | |
-| `Solarbank_Min_SOC` | Number:Dimensionless | `settings#min-soc` | MQTT+REST | R/W | Minimum battery SOC (0–100 %, 5 % steps) |
-| `Solarbank_Max_Load` | Number:Power | `settings#max-load` | MQTT | R/W | Maximum output power in watts |
-| `Solarbank_AC_Socket` | Switch | `settings#ac-socket-switch` | MQTT | R/W | AC socket on/off |
-| `Solarbank_AC_Input_Limit_MQTT` | Number:Power | `settings#ac-input-limit` | MQTT | R/W | AC charging input limit in watts |
-| `Solarbank_Disable_Grid_Export` | Switch | `settings#disable-grid-export` | MQTT | R/W | Disable grid export (ON = no export) |
-| `Solarbank_PV_Limit` | Number:Power | `settings#pv-limit` | MQTT | R/W | PV input limit in watts |
-| `Solarbank_Light` | Switch | `settings#light-switch` | MQTT | R/W | Status LED light on/off |
-| **REST Control** | | | | | |
-| `Solarbank_Home_Load` | Number:Power | `restControl#home-load` | REST | R/W | Home load preset power in watts (via schedule) |
-| `Solarbank_Output_Limit` | Number:Power | `restControl#output-limit` | REST | R/W | AC output power limit in watts |
-| `Solarbank_PV_Input_Limit` | Number:Power | `restControl#pv-input-limit` | REST | R/W | PV input power limit in watts |
-| `Solarbank_AC_Input_Limit` | Number:Power | `restControl#ac-input-limit` | REST | R/W | AC input/charging limit in watts |
-| `Solarbank_Grid_Export` | Switch | `restControl#grid-export-switch` | REST | R/W | Grid export (ON = allowed, OFF = 0 W) |
-| **Info** | | | | | |
-| `Solarbank_Firmware` | String | `info#firmware-version` | REST | R | Current firmware version string |
-| `Solarbank_Online` | Switch | `info#online-status` | REST | R | Device online/offline status |
-| `Solarbank_Last_Update` | DateTime | `info#last-update` | Both | R | Timestamp of last data update |
+| `Solarbank_Battery_SOC` | Number:Dimensionless | `battery#battery-soc` | MQTT | R | Battery state of charge (0–100 %)                             |
+| `Solarbank_Temperature` | Number:Temperature | `battery#temperature` | MQTT | R | Battery temperature in °C                                     |
+| **Grid** | | | | |                                                               |
+| `Solarbank_Grid_Power` | Number:Power | `grid#grid-power` | MQTT | R | Grid power (+import, -export) in watts                        |
+| **Energy** | | | | |                                                               |
+| `Solarbank_PV_Yield` | Number:Energy | `energy#pv-yield` | MQTT | R | Total lifetime PV energy yield in kWh                         |
+| `Solarbank_Charged_Energy` | Number:Energy | `energy#charged-energy` | MQTT | R | Total lifetime energy charged to battery in kWh               |
+| `Solarbank_Discharged_Energy` | Number:Energy | `energy#discharged-energy` | MQTT | R | Total lifetime energy discharged from battery in kWh          |
+| `Solarbank_Daily_Solar` | Number:Energy | `energy#daily-solar` | REST | R | Solar generation today in kWh                                 |
+| `Solarbank_Daily_Charge` | Number:Energy | `energy#daily-charge` | REST | R | Battery charge today in kWh                                   |
+| `Solarbank_Daily_Discharge` | Number:Energy | `energy#daily-discharge` | REST | R | Battery discharge today in kWh                                |
+| `Solarbank_Daily_Import` | Number:Energy | `energy#daily-grid-import` | REST | R | Grid import today in kWh                                      |
+| `Solarbank_Daily_Export` | Number:Energy | `energy#daily-grid-export` | REST | R | Grid export today in kWh                                      |
+| **Settings (MQTT)** | | | | |                                                               |
+| `Solarbank_Min_SOC` | Number:Dimensionless | `settings#min-soc` | MQTT+REST | R/W | Minimum battery SOC (0–100 %, 5 % steps)                      |
+| `Solarbank_Max_Load` | Number:Power | `settings#max-load` | MQTT | R/W | Maximum output power in watts                                 |
+| `Solarbank_AC_Socket` | Switch | `settings#ac-socket-switch` | MQTT | R/W | AC socket on/off                                              |
+| `Solarbank_AC_Input_Limit_MQTT` | Number:Power | `settings#ac-input-limit` | MQTT | R/W | AC charging input limit in watts                              |
+| `Solarbank_Disable_Grid_Export` | Switch | `settings#disable-grid-export` | MQTT | R/W | Disable grid export (ON = no export)                          |
+| `Solarbank_PV_Limit` | Number:Power | `settings#pv-limit` | MQTT | R/W | PV input limit in watts                                       |
+| `Solarbank_Light` | Switch | `settings#light-switch` | MQTT | R/W | Status LED light on/off                                       |
+| **REST Control** | | | | |                                                               |
+| `Solarbank_Home_Load` | Number:Power | `restControl#home-load` | REST | R/W | Home load preset power in watts (via schedule)                |
+| `Solarbank_Output_Limit` | Number:Power | `restControl#output-limit` | REST | R/W | AC output power limit in watts                                |
+| `Solarbank_PV_Input_Limit` | Number:Power | `restControl#pv-input-limit` | REST | R/W | PV input power limit in watts                                 |
+| `Solarbank_AC_Input_Limit` | Number:Power | `restControl#ac-input-limit` | REST | R/W | AC input/charging limit in watts                              |
+| `Solarbank_Grid_Export` | Switch | `restControl#grid-export-switch` | REST | R/W | Grid export (ON = allowed, OFF = 0 W)                         |
+| **Info** | | | | |                                                               |
+| `Solarbank_Firmware` | String | `info#firmware-version` | REST | R | Current firmware version string                               |
+| `Solarbank_Online` | Switch | `info#online-status` | REST | R | Device online/offline status                                  |
+| `Solarbank_Last_Update` | DateTime | `info#last-update` | Both | R | Timestamp of last data update                                 |
 
 ### Via `.items` file
 
