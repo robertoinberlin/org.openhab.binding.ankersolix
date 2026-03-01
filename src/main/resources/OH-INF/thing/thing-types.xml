@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="ankersolix"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+    xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0
+        https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+    <!-- ==================== Bridge: Anker Cloud Account ==================== -->
+    <bridge-type id="account">
+        <label>Anker Solix Account</label>
+        <description>Connection to the Anker Solix cloud API</description>
+        <config-description>
+            <parameter name="email" type="text" required="true">
+                <label>Email</label>
+                <description>Anker account email address</description>
+            </parameter>
+            <parameter name="password" type="text" required="true">
+                <label>Password</label>
+                <description>Anker account password</description>
+                <context>password</context>
+            </parameter>
+            <parameter name="country" type="text" required="true">
+                <label>Country Code</label>
+                <description>Two-letter country code (e.g. DE, US, GB)</description>
+                <default>DE</default>
+            </parameter>
+            <parameter name="server" type="text" required="true">
+                <label>API Server Region</label>
+                <description>API server region</description>
+                <default>eu</default>
+                <options>
+                    <option value="eu">Europe</option>
+                    <option value="com">US / Global</option>
+                </options>
+            </parameter>
+            <parameter name="restPollingInterval" type="integer" required="false" min="60" unit="s">
+                <label>REST Polling Interval</label>
+                <description>Interval in seconds for REST API polling (minimum 60)</description>
+                <default>120</default>
+            </parameter>
+            <parameter name="enableMqtt" type="boolean" required="false">
+                <label>Enable MQTT</label>
+                <description>Enable MQTT for real-time updates</description>
+                <default>false</default>
+            </parameter>
+        </config-description>
+    </bridge-type>
+
+    <!-- ==================== Thing: Solarbank 3 Pro ==================== -->
+    <thing-type id="solarbank">
+        <supported-bridge-type-refs>
+            <bridge-type-ref id="account"/>
+        </supported-bridge-type-refs>
+        <label>Solarbank 3 Pro</label>
+        <description>Anker Solix Solarbank 3 E2700 Pro (A17C5)</description>
+        <channel-groups>
+            <channel-group id="power" typeId="solarbank-power"/>
+            <channel-group id="solar" typeId="solarbank-solar"/>
+            <channel-group id="battery" typeId="solarbank-battery"/>
+            <channel-group id="grid" typeId="solarbank-grid"/>
+            <channel-group id="energy" typeId="solarbank-energy"/>
+            <channel-group id="settings" typeId="solarbank-settings"/>
+            <channel-group id="restControl" typeId="solarbank-rest-control"/>
+            <channel-group id="info" typeId="solarbank-info"/>
+        </channel-groups>
+        <representation-property>deviceSn</representation-property>
+        <config-description>
+            <parameter name="siteId" type="text" required="true">
+                <label>Site ID</label>
+                <description>Anker Solix site identifier</description>
+            </parameter>
+            <parameter name="deviceSn" type="text" required="true">
+                <label>Device Serial Number</label>
+                <description>Solarbank device serial number</description>
+            </parameter>
+        </config-description>
+    </thing-type>
+
+    <!-- ==================== Channel Group Types ==================== -->
+
+    <!-- Power flows -->
+    <channel-group-type id="solarbank-power">
+        <label>Power</label>
+        <description>Real-time power flows</description>
+        <channels>
+            <channel id="photovoltaic-power" typeId="power-reading">
+                <label>PV Power</label>
+                <description>Total photovoltaic generation</description>
+            </channel>
+            <channel id="output-power" typeId="power-reading">
+                <label>Output Power</label>
+                <description>Total output power</description>
+            </channel>
+            <channel id="ac-output-power" typeId="power-reading-signed">
+                <label>AC Output Power</label>
+                <description>AC output power (signed)</description>
+            </channel>
+            <channel id="home-demand" typeId="power-reading">
+                <label>Home Demand</label>
+                <description>Total home power demand</description>
+            </channel>
+        </channels>
+    </channel-group-type>
+
+    <!-- Per-string solar -->
+    <channel-group-type id="solarbank-solar">
+        <label>Solar Strings</label>
+        <description>Per-MPPT string solar data</description>
+        <channels>
+            <channel id="pv1-power" typeId="power-reading">
+                <label>PV String 1</label>
+            </channel>
+            <channel id="pv2-power" typeId="power-reading">
+                <label>PV String 2</label>
+            </channel>
+            <channel id="pv3-power" typeId="power-reading">
+                <label>PV String 3</label>
+            </channel>
+            <channel id="pv4-power" typeId="power-reading">
+                <label>PV String 4</label>
+            </channel>
+        </channels>
+    </channel-group-type>
+
+    <!-- Battery -->
+    <channel-group-type id="solarbank-battery">
+        <label>Battery</label>
+        <description>Battery state</description>
+        <channels>
+            <channel id="battery-power" typeId="power-reading-signed">
+                <label>Battery Power</label>
+                <description>Battery charge/discharge power (+charge, -discharge)</description>
+            </channel>
+            <channel id="battery-soc" typeId="battery-soc">
+                <label>Battery SOC</label>
+                <description>State of charge</description>
+            </channel>
+            <channel id="temperature" typeId="temperature-reading">
+                <label>Temperature</label>
+                <description>Battery temperature</description>
+            </channel>
+        </channels>
+    </channel-group-type>
+
+    <!-- Grid -->
+    <channel-group-type id="solarbank-grid">
+        <label>Grid</label>
+        <description>Grid interaction</description>
+        <channels>
+            <channel id="grid-power" typeId="power-reading-signed">
+                <label>Grid Power</label>
+                <description>Grid power (+import, -export)</description>
+            </channel>
+        </channels>
+    </channel-group-type>
+
+    <!-- Energy counters -->
+    <channel-group-type id="solarbank-energy">
+        <label>Energy</label>
+        <description>Cumulative energy counters</description>
+        <channels>
+            <channel id="pv-yield" typeId="energy-reading">
+                <label>PV Yield Total</label>
+                <description>Total PV energy yield</description>
+            </channel>
+            <channel id="charged-energy" typeId="energy-reading">
+                <label>Charged Total</label>
+                <description>Total energy charged to battery</description>
+            </channel>
+            <channel id="discharged-energy" typeId="energy-reading">
+                <label>Discharged Total</label>
+                <description>Total energy discharged from battery</description>
+            </channel>
+            <channel id="daily-solar" typeId="energy-reading">
+                <label>Daily Solar</label>
+                <description>Solar generation today</description>
+            </channel>
+            <channel id="daily-charge" typeId="energy-reading">
+                <label>Daily Charge</label>
+                <description>Battery charge today</description>
+            </channel>
+            <channel id="daily-discharge" typeId="energy-reading">
+                <label>Daily Discharge</label>
+                <description>Battery discharge today</description>
+            </channel>
+            <channel id="daily-grid-import" typeId="energy-reading">
+                <label>Daily Grid Import</label>
+                <description>Grid import today</description>
+            </channel>
+            <channel id="daily-grid-export" typeId="energy-reading">
+                <label>Daily Grid Export</label>
+                <description>Grid export today</description>
+            </channel>
+        </channels>
+    </channel-group-type>
+
+    <!-- Settings (writable) -->
+    <channel-group-type id="solarbank-settings">
+        <label>Settings</label>
+        <description>Device settings and controls</description>
+        <channels>
+            <channel id="min-soc" typeId="min-soc-setting"/>
+            <channel id="max-load" typeId="power-setting">
+                <label>Max Output Load</label>
+                <description>Maximum output power in watts</description>
+            </channel>
+            <channel id="ac-socket-switch" typeId="switch-setting">
+                <label>AC Socket</label>
+                <description>AC socket on/off</description>
+            </channel>
+            <channel id="ac-input-limit" typeId="power-setting">
+                <label>AC Input Limit</label>
+                <description>AC charging input limit in watts</description>
+            </channel>
+            <channel id="disable-grid-export" typeId="switch-setting">
+                <label>Disable Grid Export</label>
+                <description>Disable grid export (0W export)</description>
+            </channel>
+            <channel id="pv-limit" typeId="power-setting">
+                <label>PV Input Limit</label>
+                <description>PV input limit in watts</description>
+            </channel>
+            <channel id="light-switch" typeId="switch-setting">
+                <label>Status Light</label>
+                <description>Status light on/off</description>
+            </channel>
+        </channels>
+    </channel-group-type>
+
+    <!-- REST Control (writable via REST API, no MQTT needed) -->
+    <channel-group-type id="solarbank-rest-control">
+        <label>REST Control</label>
+        <description>Device controls via REST API (no MQTT required)</description>
+        <channels>
+            <channel id="home-load" typeId="power-setting">
+                <label>Home Load Preset</label>
+                <description>Default home load output power in watts (set via schedule)</description>
+            </channel>
+            <channel id="output-limit" typeId="power-setting">
+                <label>AC Output Limit</label>
+                <description>AC output power limit in watts (via device attributes)</description>
+            </channel>
+            <channel id="pv-input-limit" typeId="power-setting">
+                <label>PV Input Limit</label>
+                <description>PV input power limit in watts (via device attributes)</description>
+            </channel>
+            <channel id="ac-input-limit" typeId="power-setting">
+                <label>AC Input Limit</label>
+                <description>AC input/charging power limit in watts (via device attributes)</description>
+            </channel>
+            <channel id="grid-export-switch" typeId="switch-setting">
+                <label>Grid Export</label>
+                <description>Enable/disable grid export (ON=export allowed, OFF=0W export)</description>
+            </channel>
+        </channels>
+    </channel-group-type>
+
+    <!-- Info -->
+    <channel-group-type id="solarbank-info">
+        <label>Info</label>
+        <description>Device metadata</description>
+        <channels>
+            <channel id="firmware-version" typeId="string-reading">
+                <label>Firmware Version</label>
+            </channel>
+            <channel id="online-status" typeId="online-status"/>
+            <channel id="last-update" typeId="last-update"/>
+        </channels>
+    </channel-group-type>
+
+    <!-- ==================== Channel Types ==================== -->
+
+    <channel-type id="power-reading">
+        <item-type>Number:Power</item-type>
+        <label>Power</label>
+        <category>Energy</category>
+        <tags>
+            <tag>Measurement</tag>
+            <tag>Power</tag>
+        </tags>
+        <state pattern="%.0f %unit%" readOnly="true"/>
+    </channel-type>
+
+    <channel-type id="power-reading-signed">
+        <item-type>Number:Power</item-type>
+        <label>Power (signed)</label>
+        <category>Energy</category>
+        <tags>
+            <tag>Measurement</tag>
+            <tag>Power</tag>
+        </tags>
+        <state pattern="%.0f %unit%" readOnly="true"/>
+    </channel-type>
+
+    <channel-type id="energy-reading">
+        <item-type>Number:Energy</item-type>
+        <label>Energy</label>
+        <category>Energy</category>
+        <tags>
+            <tag>Measurement</tag>
+            <tag>Energy</tag>
+        </tags>
+        <state pattern="%.2f %unit%" readOnly="true"/>
+    </channel-type>
+
+    <channel-type id="battery-soc">
+        <item-type>Number:Dimensionless</item-type>
+        <label>Battery SOC</label>
+        <category>BatteryLevel</category>
+        <tags>
+            <tag>Measurement</tag>
+        </tags>
+        <state pattern="%.0f %%" readOnly="true" min="0" max="100"/>
+    </channel-type>
+
+    <channel-type id="temperature-reading">
+        <item-type>Number:Temperature</item-type>
+        <label>Temperature</label>
+        <category>Temperature</category>
+        <tags>
+            <tag>Measurement</tag>
+            <tag>Temperature</tag>
+        </tags>
+        <state pattern="%.1f %unit%" readOnly="true"/>
+    </channel-type>
+
+    <channel-type id="min-soc-setting">
+        <item-type>Number:Dimensionless</item-type>
+        <label>Minimum SOC</label>
+        <category>BatteryLevel</category>
+        <state pattern="%.0f %%" min="0" max="100" step="5"/>
+    </channel-type>
+
+    <channel-type id="power-setting">
+        <item-type>Number:Power</item-type>
+        <label>Power Setting</label>
+        <category>Energy</category>
+        <state pattern="%.0f %unit%"/>
+    </channel-type>
+
+    <channel-type id="switch-setting">
+        <item-type>Switch</item-type>
+        <label>Switch</label>
+        <category>Switch</category>
+    </channel-type>
+
+    <channel-type id="string-reading">
+        <item-type>String</item-type>
+        <label>Text</label>
+        <state readOnly="true"/>
+    </channel-type>
+
+    <channel-type id="online-status">
+        <item-type>Switch</item-type>
+        <label>Online Status</label>
+        <category>Network</category>
+        <state readOnly="true"/>
+    </channel-type>
+
+    <channel-type id="last-update">
+        <item-type>DateTime</item-type>
+        <label>Last Update</label>
+        <category>Time</category>
+        <state readOnly="true"/>
+    </channel-type>
+
+</thing:thing-descriptions>

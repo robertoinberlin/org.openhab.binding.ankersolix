@@ -1,0 +1,134 @@
+### ============================================================
+### Anker Solix API - Sites
+### ============================================================
+
+### Get Site List
+### Returns all sites associated with the account.
+### Use this to find your site_id and device serial numbers.
+POST {{base_url}}/power_service/v1/site/get_site_list
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{}
+
+> {%
+    client.test("Get site list successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+
+    var siteList = response.body.data.site_list;
+    if (siteList && siteList.length > 0) {
+        client.log("Found " + siteList.length + " site(s):");
+        for (var i = 0; i < siteList.length; i++) {
+            client.log("  [" + i + "] site_id=" + siteList[i].site_id + "  name=" + siteList[i].site_name);
+        }
+        // Auto-save first site_id
+        client.global.set("site_id", siteList[0].site_id);
+    }
+%}
+
+###
+
+### Get Site Homepage
+### Primary polling endpoint — returns power overview, battery SOC,
+### energy counters, and device list for a site.
+POST {{base_url}}/power_service/v1/site/get_site_homepage
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}"
+}
+
+> {%
+    client.test("Get site homepage successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+
+    var data = response.body.data;
+    if (data.solarbank_list && data.solarbank_list.length > 0) {
+        client.log("Found " + data.solarbank_list.length + " device(s):");
+        for (var i = 0; i < data.solarbank_list.length; i++) {
+            var dev = data.solarbank_list[i];
+            client.log("  [" + i + "] device_sn=" + dev.device_sn + "  name=" + dev.device_name);
+        }
+        // Auto-save first device_sn
+        client.global.set("device_sn", data.solarbank_list[0].device_sn);
+    }
+
+    var home = data.home_info;
+    if (home) {
+        client.log("PV: " + home.solar_power + " W | Battery: " + home.battery_power + " W | Home: " + home.home_usage_power + " W");
+    }
+%}
+
+###
+
+### Get Scene Info
+### Returns site scene/layout information.
+POST {{base_url}}/power_service/v1/site/get_scen_info
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}"
+}
+
+> {%
+    client.test("Get scene info successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+    });
+%}
+
+###
+
+### Energy Analysis
+### Returns energy statistics for a date range.
+POST {{base_url}}/power_service/v1/site/energy_analysis
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}",
+  "device_sn": "{{device_sn}}",
+  "type": "week",
+  "start_time": "2025-01-01",
+  "end_time": "",
+  "device_type": "solar_production"
+}
+
+> {%
+    client.test("Energy analysis successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+    });
+%}
+
+###

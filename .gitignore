@@ -1,0 +1,4 @@
+http-client.private.env.json
+
+# Project exclude paths
+/target/

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.openhab.addons.bundles</groupId>
+    <artifactId>org.openhab.binding.ankersolix</artifactId>
+    <version>5.1.2-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>openHAB Add-ons :: Bundles :: Anker Solix Binding</name>
+
+    <properties>
+        <ohc.version>5.1.0</ohc.version>
+        <bnd.version>7.1.0</bnd.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>openhab-release</id>
+            <url>https://openhab.jfrog.io/artifactory/libs-release</url>
+        </repository>
+        <repository>
+            <id>openhab-snapshot</id>
+            <url>https://openhab.jfrog.io/artifactory/libs-snapshot</url>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.openhab.core.bom</groupId>
+            <artifactId>org.openhab.core.bom.compile</artifactId>
+            <version>${ohc.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openhab.core.bom</groupId>
+            <artifactId>org.openhab.core.bom.openhab-core</artifactId>
+            <version>${ohc.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Paho MQTT Client (embedded in bundle) -->
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>1.2.5</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Gson (provided by openHAB runtime) -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-maven-plugin</artifactId>
+                <version>${bnd.version}</version>
+                <configuration>
+                    <bnd><![CDATA[
+Bundle-SymbolicName: ${project.artifactId}
+Bundle-Name: Anker Solix Binding
+Bundle-Description: openHAB binding for Anker Solix Solarbank 3 Pro
+Bundle-License: EPL-2.0
+Import-Package: \
+  !sun.misc,\
+  !sun.security.*,\
+  !org.eclipse.paho.*,\
+  org.openhab.*;version=!,\
+  *
+-exportcontents: \
+  !*.internal.*,\
+  org.openhab.binding.ankersolix.*
+Private-Package: \
+  org.openhab.binding.ankersolix.*,\
+  org.eclipse.paho.*
+                    ]]></bnd>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals><goal>bnd-process</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

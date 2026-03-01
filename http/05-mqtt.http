@@ -1,0 +1,35 @@
+### ============================================================
+### Anker Solix API - MQTT Info
+### ============================================================
+
+### Get MQTT Connection Info
+### Returns MQTT broker endpoint, certificates, and credentials
+### needed to establish an MQTT connection.
+POST {{base_url}}/app/devicemanage/get_user_mqtt_info
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{}
+
+> {%
+    client.test("Get MQTT info successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+
+    var data = response.body.data;
+    if (data) {
+        client.log("MQTT Endpoint: " + data.endpoint_addr);
+        client.log("App Name: " + data.app_name);
+        client.log("Thing Name: " + data.thing_name);
+    }
+%}
+
+###

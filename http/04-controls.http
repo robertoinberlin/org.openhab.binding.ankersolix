@@ -1,0 +1,249 @@
+### ============================================================
+### Anker Solix API - Device Controls (Write Operations)
+### ============================================================
+### WARNING: These requests modify device settings.
+### Use with caution!
+### ============================================================
+
+### Set Output Power Limit
+### Sets the AC output power limit (power_limit) in watts.
+POST {{base_url}}/power_service/v1/app/device/set_device_attrs
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "device_sn": "{{device_sn}}",
+  "attributes": {
+    "power_limit": 800
+  }
+}
+
+> {%
+    client.test("Set output power limit successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("Output power limit set to 800 W");
+%}
+
+###
+
+### Set PV Input Power Limit
+### Sets the PV input power limit (pv_power_limit) in watts.
+POST {{base_url}}/power_service/v1/app/device/set_device_attrs
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "device_sn": "{{device_sn}}",
+  "attributes": {
+    "pv_power_limit": 1200
+  }
+}
+
+> {%
+    client.test("Set PV power limit successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("PV input power limit set to 1200 W");
+%}
+
+###
+
+### Set AC Input/Charging Limit
+### Sets the AC input charging limit (ac_power_limit) in watts.
+POST {{base_url}}/power_service/v1/app/device/set_device_attrs
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "device_sn": "{{device_sn}}",
+  "attributes": {
+    "ac_power_limit": 500
+  }
+}
+
+> {%
+    client.test("Set AC input limit successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("AC input limit set to 500 W");
+%}
+
+###
+
+### Disable Grid Export
+### Sets switch_0w: 1 = disable export (0 W), 0 = enable export.
+### Note: the value is INVERTED — 1 means OFF, 0 means ON.
+POST {{base_url}}/power_service/v1/app/device/set_device_attrs
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "device_sn": "{{device_sn}}",
+  "attributes": {
+    "switch_0w": 1
+  }
+}
+
+> {%
+    client.test("Disable grid export successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("Grid export DISABLED (0 W export)");
+%}
+
+###
+
+### Enable Grid Export
+### Sets switch_0w: 0 = enable export.
+POST {{base_url}}/power_service/v1/app/device/set_device_attrs
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "device_sn": "{{device_sn}}",
+  "attributes": {
+    "switch_0w": 0
+  }
+}
+
+> {%
+    client.test("Enable grid export successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("Grid export ENABLED");
+%}
+
+###
+
+### Set Multiple Attributes at Once
+### Example: set output limit + PV limit + enable grid export.
+POST {{base_url}}/power_service/v1/app/device/set_device_attrs
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "device_sn": "{{device_sn}}",
+  "attributes": {
+    "power_limit": 600,
+    "pv_power_limit": 1000,
+    "switch_0w": 0
+  }
+}
+
+> {%
+    client.test("Set multiple attributes successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("Multiple device attributes set");
+%}
+
+###
+
+### Set Home Load (via schedule)
+### Sets a simple all-day home load preset in watts.
+### Uses param_type=6 (SB2/SB3 schedule), cmd=17.
+POST {{base_url}}/power_service/v1/site/set_site_device_param
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}",
+  "param_type": "6",
+  "cmd": 17,
+  "param_data": "{\"mode_type\":3,\"custom_rate_plan\":[{\"index\":0,\"week\":[0,1,2,3,4,5,6],\"ranges\":[{\"start_time\":\"00:00\",\"end_time\":\"24:00\",\"power\":200}]}],\"default_home_load\":200,\"max_load\":800,\"min_load\":0,\"step\":10}"
+}
+
+> {%
+    client.test("Set home load successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("Home load set to 200 W (all-day schedule)");
+%}
+
+###
+
+### Set Power Cutoff (Minimum SOC)
+### Sets the minimum battery SOC via power cutoff.
+POST {{base_url}}/power_service/v1/app/compatible/set_power_cutoff
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}",
+  "device_sn": "{{device_sn}}",
+  "cutoff_data_id": 20
+}
+
+> {%
+    client.test("Set power cutoff successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+    client.log("Power cutoff (min SOC) set to id: 20");
+%}
+
+###

@@ -1,0 +1,162 @@
+### ============================================================
+### Anker Solix API - Device Parameters & Attributes
+### ============================================================
+
+### Get Related and Bound Devices
+### Returns all devices bound to the account.
+POST {{base_url}}/power_service/v1/app/get_relate_and_bind_devices
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{}
+
+> {%
+    client.test("Get bound devices successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+    });
+%}
+
+###
+
+### Get Device Param - Schedule (param_type=6)
+### Returns SB2/SB3 schedule configuration (home load presets).
+POST {{base_url}}/power_service/v1/site/get_site_device_param
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}",
+  "param_type": 6
+}
+
+> {%
+    client.test("Get device param (schedule) successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+%}
+
+###
+
+### Get Device Param - Tariff Schedule (param_type=12)
+### Returns tariff/time-of-use schedule configuration.
+POST {{base_url}}/power_service/v1/site/get_site_device_param
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}",
+  "param_type": 12
+}
+
+> {%
+    client.test("Get device param (tariff) successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+    });
+%}
+
+###
+
+### Get Device Param - Station Settings (param_type=18)
+### Returns station-level settings (min SOC, power limits, etc.).
+POST {{base_url}}/power_service/v1/site/get_site_device_param
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}",
+  "param_type": 18
+}
+
+> {%
+    client.test("Get device param (station settings) successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+%}
+
+###
+
+### Get Device Attributes
+### Returns device-level attributes (power limits, switches).
+### Attributes: power_limit, pv_power_limit, ac_power_limit, switch_0w
+POST {{base_url}}/power_service/v1/app/device/get_device_attrs
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "device_sn": "{{device_sn}}",
+  "attributes": [
+    "power_limit",
+    "pv_power_limit",
+    "ac_power_limit",
+    "switch_0w"
+  ]
+}
+
+> {%
+    client.test("Get device attributes successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+%}
+
+###
+
+### Get Power Cutoff
+### Returns the power cutoff (minimum SOC) setting.
+POST {{base_url}}/power_service/v1/app/compatible/get_power_cutoff
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+x-auth-token: {{auth_token}}
+gtoken: {{gtoken}}
+
+{
+  "site_id": "{{site_id}}",
+  "device_sn": "{{device_sn}}"
+}
+
+> {%
+    client.test("Get power cutoff successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+    });
+%}
+
+###

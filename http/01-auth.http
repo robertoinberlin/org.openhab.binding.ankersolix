@@ -1,0 +1,61 @@
+### ============================================================
+### Anker Solix API - Authentication
+### ============================================================
+###
+### IMPORTANT: The password must be encrypted using ECDH P-256
+### key exchange + AES-256-CBC before sending.
+###
+### To obtain an encrypted password and client public key, you can:
+###   1. Run the binding with DEBUG logging and capture the values
+###   2. Use the helper script: encrypt-password.http (see below)
+###
+### After login, auth_token, user_id, and gtoken are saved
+### automatically for use in subsequent requests.
+### ============================================================
+
+### Login
+### Authenticates with the Anker cloud and stores tokens
+POST {{base_url}}/passport/login
+Content-Type: application/json
+Model-Type: DESKTOP
+App-Name: anker_power
+Os-Type: android
+Country: {{country}}
+Timezone: {{timezone}}
+
+{
+  "ab": "{{country}}",
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "enc": 0,
+  "time_zone": {{timezone_offset_ms}},
+  "transaction": "{{$timestamp}}",
+  "client_secret_info": {
+    "public_key": "{{client_public_key}}"
+  }
+}
+
+> {%
+    client.test("Login successful", function () {
+        client.assert(response.status === 200, "Expected 200 OK");
+        var body = response.body;
+        client.assert(body.code === 0, "Expected code 0, got: " + body.code + " - " + body.msg);
+    });
+
+    var data = response.body.data;
+    client.global.set("auth_token", data.auth_token || data.token);
+    client.global.set("user_id", data.user_id);
+    client.global.set("nick_name", data.nick_name);
+    client.global.set("token_expires_at", data.token_expires_at);
+
+    // gtoken = MD5(user_id) — IntelliJ HTTP client cannot compute MD5,
+    // so copy it from the binding logs or compute manually:
+    //   echo -n "YOUR_USER_ID" | md5sum
+    // Then set it below or in http-client.private.env.json
+    client.log("Logged in as: " + data.nick_name);
+    client.log("user_id: " + data.user_id);
+    client.log("auth_token: " + (data.auth_token || data.token));
+    client.log("IMPORTANT: compute gtoken = MD5(user_id) and set it in your env");
+%}
+
+###
