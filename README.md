@@ -387,6 +387,47 @@ Some power channels report signed values:
 
 The binding enforces a maximum of 5 API requests per 60 seconds. If you operate multiple bindings or tools against the same Anker account simultaneously, you may encounter rate-limit errors. Consider increasing the polling interval or disabling other tools during testing.
 
+## Logging
+
+The binding uses the logger name `org.openhab.binding.ankersolix`. You can adjust the log level to get more or less detail.
+
+### Via the openHAB UI (recommended)
+
+1. Go to **Settings > Add-on Settings > Anker Solix Binding**
+2. Change the **Log Level** to `DEBUG` or `TRACE`
+3. The change takes effect immediately — no restart needed
+
+### Via the Karaf console
+
+```
+log:set DEBUG org.openhab.binding.ankersolix
+log:tail org.openhab.binding.ankersolix
+```
+
+To reset back to normal:
+
+```
+log:set INFO org.openhab.binding.ankersolix
+```
+
+### Via `log4j2.xml`
+
+Add the following to your `userdata/etc/log4j2.xml` inside the `<Loggers>` section for a persistent configuration:
+
+```xml
+<Logger name="org.openhab.binding.ankersolix" level="DEBUG"/>
+```
+
+### Log levels
+
+| Level   | What you see                                                                 |
+|---------|------------------------------------------------------------------------------|
+| `INFO`  | Authentication success, site/device discovery, MQTT connection status        |
+| `DEBUG` | API call results, MQTT subscriptions, command confirmations, polling details |
+| `TRACE` | Full API response bodies, raw MQTT payloads, binary data decoding            |
+
+Start with `DEBUG` when investigating issues. Only use `TRACE` if you need to inspect raw API or MQTT data — it produces a large amount of output.
+
 ## Full Example
 
 ### `ankersolix.things`
