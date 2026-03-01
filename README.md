@@ -129,105 +129,48 @@ Channel IDs use the format `ankersolix:solarbank:<bridge>:<thing>:<channel>`.
 | Item Name | Item Type | Channel | Source | R/W | Description                                                   |
 |-----------|-----------|---------|--------|-----|---------------------------------------------------------------|
 | **Power** | | | | |                                                               |
-| `Solarbank_PV_Power` | Number:Power | `power#photovoltaic-power` | MQTT | R | Total photovoltaic generation in watts                        |
-| `Solarbank_Output_Power` | Number:Power | `power#output-power` | MQTT | R | Current output power to home in watts                         |
-| `Solarbank_AC_Output` | Number:Power | `power#ac-output-power` | MQTT | R | AC output power (signed) in watts                             |
-| `Solarbank_Home_Demand` | Number:Power | `power#home-demand` | MQTT | R | Total home power demand in watts                              |
+| `SB_PV_Power` | Number:Power | `power#photovoltaic-power` | MQTT | R | Total photovoltaic generation in watts                        |
+| `SB_Output` | Number:Power | `power#output-power` | MQTT | R | Current output power to home in watts                         |
+| `SB_AC_Output` | Number:Power | `power#ac-output-power` | MQTT | R | AC output power (signed) in watts                             |
+| `SB_Home_Demand` | Number:Power | `power#home-demand` | MQTT | R | Total home power demand in watts                              |
 | **Solar Strings** | | | | |                                                               |
-| `Solarbank_PV1` | Number:Power | `solar#pv1-power` | MQTT | R | MPPT string 1 power in watts  (solar inout #1)                |
-| `Solarbank_PV2` | Number:Power | `solar#pv2-power` | MQTT | R | MPPT string 2 power in watts  (solar inout #12)               |
-| `Solarbank_PV3` | Number:Power | `solar#pv3-power` | MQTT | R | MPPT string 3 power in watts  (solar inout #3)                |
-| `Solarbank_PV4` | Number:Power | `solar#pv4-power` | MQTT | R | MPPT string 4 power in watts (solar inout #4)                 |
+| `SB_PV1` | Number:Power | `solar#pv1-power` | MQTT | R | MPPT string 1 power in watts (solar input #1)                 |
+| `SB_PV2` | Number:Power | `solar#pv2-power` | MQTT | R | MPPT string 2 power in watts (solar input #2)                 |
+| `SB_PV3` | Number:Power | `solar#pv3-power` | MQTT | R | MPPT string 3 power in watts (solar input #3)                 |
+| `SB_PV4` | Number:Power | `solar#pv4-power` | MQTT | R | MPPT string 4 power in watts (solar input #4)                 |
 | **Battery** | | | | |                                                               |
-| `Solarbank_Battery_Power` | Number:Power | `battery#battery-power` | MQTT | R | Battery charge/discharge power (+charge, -discharge) in watts |
-| `Solarbank_Battery_SOC` | Number:Dimensionless | `battery#battery-soc` | MQTT | R | Battery state of charge (0–100 %)                             |
-| `Solarbank_Temperature` | Number:Temperature | `battery#temperature` | MQTT | R | Battery temperature in °C                                     |
+| `SB_Bat_Power` | Number:Power | `battery#battery-power` | MQTT | R | Battery charge/discharge power (+charge, -discharge) in watts |
+| `SB_Bat_SOC` | Number:Dimensionless | `battery#battery-soc` | MQTT | R | Battery state of charge (0–100 %)                             |
+| `SB_Temperature` | Number:Temperature | `battery#temperature` | MQTT | R | Battery temperature in °C                                     |
 | **Grid** | | | | |                                                               |
-| `Solarbank_Grid_Power` | Number:Power | `grid#grid-power` | MQTT | R | Grid power (+import, -export) in watts                        |
+| `SB_Grid` | Number:Power | `grid#grid-power` | MQTT | R | Grid power (+import, -export) in watts                        |
 | **Energy** | | | | |                                                               |
-| `Solarbank_PV_Yield` | Number:Energy | `energy#pv-yield` | MQTT | R | Total lifetime PV energy yield in kWh                         |
-| `Solarbank_Charged_Energy` | Number:Energy | `energy#charged-energy` | MQTT | R | Total lifetime energy charged to battery in kWh               |
-| `Solarbank_Discharged_Energy` | Number:Energy | `energy#discharged-energy` | MQTT | R | Total lifetime energy discharged from battery in kWh          |
-| `Solarbank_Daily_Solar` | Number:Energy | `energy#daily-solar` | REST | R | Solar generation today in kWh                                 |
-| `Solarbank_Daily_Charge` | Number:Energy | `energy#daily-charge` | REST | R | Battery charge today in kWh                                   |
-| `Solarbank_Daily_Discharge` | Number:Energy | `energy#daily-discharge` | REST | R | Battery discharge today in kWh                                |
-| `Solarbank_Daily_Import` | Number:Energy | `energy#daily-grid-import` | REST | R | Grid import today in kWh                                      |
-| `Solarbank_Daily_Export` | Number:Energy | `energy#daily-grid-export` | REST | R | Grid export today in kWh                                      |
+| `SB_PV_Yield` | Number:Energy | `energy#pv-yield` | MQTT | R | Total lifetime PV energy yield in kWh                         |
+| `SB_Charged` | Number:Energy | `energy#charged-energy` | MQTT | R | Total lifetime energy charged to battery in kWh               |
+| `SB_Discharged` | Number:Energy | `energy#discharged-energy` | MQTT | R | Total lifetime energy discharged from battery in kWh          |
+| `SB_Daily_Solar` | Number:Energy | `energy#daily-solar` | REST | R | Solar generation today in kWh                                 |
+| `SB_Daily_Charge` | Number:Energy | `energy#daily-charge` | REST | R | Battery charge today in kWh                                   |
+| `SB_Daily_Discharge` | Number:Energy | `energy#daily-discharge` | REST | R | Battery discharge today in kWh                                |
+| `SB_Daily_Import` | Number:Energy | `energy#daily-grid-import` | REST | R | Grid import today in kWh                                      |
+| `SB_Daily_Export` | Number:Energy | `energy#daily-grid-export` | REST | R | Grid export today in kWh                                      |
 | **Settings (MQTT)** | | | | |                                                               |
-| `Solarbank_Min_SOC` | Number:Dimensionless | `settings#min-soc` | MQTT+REST | R/W | Minimum battery SOC (0–100 %, 5 % steps)                      |
-| `Solarbank_Max_Load` | Number:Power | `settings#max-load` | MQTT | R/W | Maximum output power in watts                                 |
-| `Solarbank_AC_Socket` | Switch | `settings#ac-socket-switch` | MQTT | R/W | AC socket on/off                                              |
-| `Solarbank_AC_Input_Limit_MQTT` | Number:Power | `settings#ac-input-limit` | MQTT | R/W | AC charging input limit in watts                              |
-| `Solarbank_Disable_Grid_Export` | Switch | `settings#disable-grid-export` | MQTT | R/W | Disable grid export (ON = no export)                          |
-| `Solarbank_PV_Limit` | Number:Power | `settings#pv-limit` | MQTT | R/W | PV input limit in watts                                       |
-| `Solarbank_Light` | Switch | `settings#light-switch` | MQTT | R/W | Status LED light on/off                                       |
+| `SB_Min_SOC` | Number:Dimensionless | `settings#min-soc` | MQTT+REST | R/W | Minimum battery SOC (0–100 %, 5 % steps)                      |
+| `SB_Max_Load` | Number:Power | `settings#max-load` | MQTT | R/W | Maximum output power in watts                                 |
+| `SB_AC_Socket` | Switch | `settings#ac-socket-switch` | MQTT | R/W | AC socket on/off                                              |
+| `SB_AC_Limit_MQTT` | Number:Power | `settings#ac-input-limit` | MQTT | R/W | AC charging input limit in watts                              |
+| `SB_Disable_Export` | Switch | `settings#disable-grid-export` | MQTT | R/W | Disable grid export (ON = no export)                          |
+| `SB_PV_Limit` | Number:Power | `settings#pv-limit` | MQTT | R/W | PV input limit in watts                                       |
+| `SB_Light` | Switch | `settings#light-switch` | MQTT | R/W | Status LED light on/off                                       |
 | **REST Control** | | | | |                                                               |
-| `Solarbank_Home_Load` | Number:Power | `restControl#home-load` | REST | R/W | Home load preset power in watts (via schedule)                |
-| `Solarbank_Output_Limit` | Number:Power | `restControl#output-limit` | REST | R/W | AC output power limit in watts                                |
-| `Solarbank_PV_Input_Limit` | Number:Power | `restControl#pv-input-limit` | REST | R/W | PV input power limit in watts                                 |
-| `Solarbank_AC_Input_Limit` | Number:Power | `restControl#ac-input-limit` | REST | R/W | AC input/charging limit in watts                              |
-| `Solarbank_Grid_Export` | Switch | `restControl#grid-export-switch` | REST | R/W | Grid export (ON = allowed, OFF = 0 W)                         |
+| `SB_Home_Load` | Number:Power | `restControl#home-load` | REST | R/W | Home load preset power in watts (via schedule)                |
+| `SB_Output_Limit` | Number:Power | `restControl#output-limit` | REST | R/W | AC output power limit in watts                                |
+| `SB_PV_Input_Limit` | Number:Power | `restControl#pv-input-limit` | REST | R/W | PV input power limit in watts                                 |
+| `SB_AC_Input_Limit` | Number:Power | `restControl#ac-input-limit` | REST | R/W | AC input/charging limit in watts                              |
+| `SB_Grid_Export` | Switch | `restControl#grid-export-switch` | REST | R/W | Grid export (ON = allowed, OFF = 0 W)                         |
 | **Info** | | | | |                                                               |
-| `Solarbank_Firmware` | String | `info#firmware-version` | REST | R | Current firmware version string                               |
-| `Solarbank_Online` | Switch | `info#online-status` | REST | R | Device online/offline status                                  |
-| `Solarbank_Last_Update` | DateTime | `info#last-update` | Both | R | Timestamp of last data update                                 |
-
-### Via `.items` file
-
-```java
-// Power (MQTT real-time)
-Number:Power       Solarbank_PV_Power          "PV Power [%.0f W]"             { channel="ankersolix:solarbank:myaccount:mysolarbank:power#photovoltaic-power" }
-Number:Power       Solarbank_Output_Power      "Output Power [%.0f W]"         { channel="ankersolix:solarbank:myaccount:mysolarbank:power#output-power" }
-Number:Power       Solarbank_AC_Output         "AC Output [%.0f W]"            { channel="ankersolix:solarbank:myaccount:mysolarbank:power#ac-output-power" }
-Number:Power       Solarbank_Home_Demand       "Home Demand [%.0f W]"          { channel="ankersolix:solarbank:myaccount:mysolarbank:power#home-demand" }
-
-// Solar Strings (MQTT real-time)
-Number:Power       Solarbank_PV1               "PV String 1 [%.0f W]"          { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv1-power" }
-Number:Power       Solarbank_PV2               "PV String 2 [%.0f W]"          { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv2-power" }
-Number:Power       Solarbank_PV3               "PV String 3 [%.0f W]"          { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv3-power" }
-Number:Power       Solarbank_PV4               "PV String 4 [%.0f W]"          { channel="ankersolix:solarbank:myaccount:mysolarbank:solar#pv4-power" }
-
-// Battery (MQTT real-time)
-Number:Power       Solarbank_Battery_Power     "Battery [%.0f W]"              { channel="ankersolix:solarbank:myaccount:mysolarbank:battery#battery-power" }
-Number             Solarbank_Battery_SOC       "SOC [%.0f %%]"                 { channel="ankersolix:solarbank:myaccount:mysolarbank:battery#battery-soc" }
-Number:Temperature Solarbank_Temperature       "Temperature [%.1f °C]"         { channel="ankersolix:solarbank:myaccount:mysolarbank:battery#temperature" }
-
-// Grid (MQTT real-time)
-Number:Power       Solarbank_Grid_Power        "Grid [%.0f W]"                 { channel="ankersolix:solarbank:myaccount:mysolarbank:grid#grid-power" }
-
-// Energy - lifetime totals (MQTT)
-Number:Energy      Solarbank_PV_Yield          "PV Yield Total [%.2f kWh]"     { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#pv-yield" }
-Number:Energy      Solarbank_Charged_Energy    "Charged Total [%.2f kWh]"      { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#charged-energy" }
-Number:Energy      Solarbank_Discharged_Energy "Discharged Total [%.2f kWh]"   { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#discharged-energy" }
-
-// Energy - daily counters (REST)
-Number:Energy      Solarbank_Daily_Solar       "Today Solar [%.2f kWh]"        { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-solar" }
-Number:Energy      Solarbank_Daily_Charge      "Today Charge [%.2f kWh]"       { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-charge" }
-Number:Energy      Solarbank_Daily_Discharge   "Today Discharge [%.2f kWh]"    { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-discharge" }
-Number:Energy      Solarbank_Daily_Import      "Today Import [%.2f kWh]"       { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-grid-import" }
-Number:Energy      Solarbank_Daily_Export      "Today Export [%.2f kWh]"       { channel="ankersolix:solarbank:myaccount:mysolarbank:energy#daily-grid-export" }
-
-// MQTT Settings (require enableMqtt=true)
-Number             Solarbank_Min_SOC           "Min SOC [%.0f %%]"             { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#min-soc" }
-Number:Power       Solarbank_Max_Load          "Max Load [%.0f W]"             { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#max-load" }
-Switch             Solarbank_AC_Socket         "AC Socket"                     { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#ac-socket-switch" }
-Number:Power       Solarbank_AC_Input_MQTT     "AC Input Limit [%.0f W]"       { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#ac-input-limit" }
-Switch             Solarbank_Disable_Export    "Disable Grid Export"           { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#disable-grid-export" }
-Number:Power       Solarbank_PV_Limit          "PV Limit [%.0f W]"             { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#pv-limit" }
-Switch             Solarbank_Light             "Status Light"                  { channel="ankersolix:solarbank:myaccount:mysolarbank:settings#light-switch" }
-
-// REST Controls (work without MQTT)
-Number:Power       Solarbank_Home_Load         "Home Load [%.0f W]"            { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#home-load" }
-Number:Power       Solarbank_Output_Limit      "Output Limit [%.0f W]"         { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#output-limit" }
-Number:Power       Solarbank_PV_Input_Limit    "PV Input Limit [%.0f W]"       { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#pv-input-limit" }
-Number:Power       Solarbank_AC_Input_Limit    "AC Input Limit [%.0f W]"       { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#ac-input-limit" }
-Switch             Solarbank_Grid_Export       "Grid Export"                   { channel="ankersolix:solarbank:myaccount:mysolarbank:restControl#grid-export-switch" }
-
-// Info
-String             Solarbank_Firmware          "Firmware [%s]"                 { channel="ankersolix:solarbank:myaccount:mysolarbank:info#firmware-version" }
-Switch             Solarbank_Online            "Online"                        { channel="ankersolix:solarbank:myaccount:mysolarbank:info#online-status" }
-DateTime           Solarbank_Last_Update       "Last Update [%1$tF %1$tR]"    { channel="ankersolix:solarbank:myaccount:mysolarbank:info#last-update" }
-```
+| `SB_Firmware` | String | `info#firmware-version` | REST | R | Current firmware version string                                |
+| `SB_Online` | Switch | `info#online-status` | REST | R | Device online/offline status                                   |
+| `SB_Last_Update` | DateTime | `info#last-update` | Both | R | Timestamp of last data update                                  |
 
 ## Channels
 
@@ -297,37 +240,25 @@ Commands accept both plain numbers (`50`) and quantity types (`300 W`). Switch c
 **openHAB console:**
 
 ```
-openhab> openhab:send Solarbank_Min_SOC 20
-openhab> openhab:send Solarbank_Max_Load 800
-openhab> openhab:send Solarbank_AC_Socket ON
-openhab> openhab:send Solarbank_AC_Input_Limit_MQTT 500
-openhab> openhab:send Solarbank_Disable_Grid_Export ON
-openhab> openhab:send Solarbank_PV_Limit 1200
-openhab> openhab:send Solarbank_Light OFF
+openhab> openhab:send SB_Min_SOC 20
+openhab> openhab:send SB_Max_Load 800
+openhab> openhab:send SB_AC_Socket ON
+openhab> openhab:send SB_AC_Limit_MQTT 500
+openhab> openhab:send SB_Disable_Export ON
+openhab> openhab:send SB_PV_Limit 1200
+openhab> openhab:send SB_Light OFF
 ```
 
 **Rules (DSL):**
 
 ```java
-Solarbank_Min_SOC.sendCommand(20)                  // set minimum SOC to 20 %
-Solarbank_Max_Load.sendCommand(800)                // set max output load to 800 W
-Solarbank_AC_Socket.sendCommand(ON)                // turn AC socket on
-Solarbank_AC_Input_Limit_MQTT.sendCommand(500)     // limit AC charging to 500 W
-Solarbank_Disable_Grid_Export.sendCommand(ON)      // disable grid export
-Solarbank_PV_Limit.sendCommand(1200)               // limit PV input to 1200 W
-Solarbank_Light.sendCommand(OFF)                   // turn status light off
-```
-
-**Items definition:**
-
-```java
-Number          Solarbank_Min_SOC                "Min SOC [%.0f %%]"             { channel="ankersolix:solarbank:myaccount:sb1:settings#min-soc" }
-Number:Power    Solarbank_Max_Load               "Max Load [%.0f W]"             { channel="ankersolix:solarbank:myaccount:sb1:settings#max-load" }
-Switch          Solarbank_AC_Socket              "AC Socket"                     { channel="ankersolix:solarbank:myaccount:sb1:settings#ac-socket-switch" }
-Number:Power    Solarbank_AC_Input_Limit_MQTT    "AC Input Limit [%.0f W]"       { channel="ankersolix:solarbank:myaccount:sb1:settings#ac-input-limit" }
-Switch          Solarbank_Disable_Grid_Export    "Disable Grid Export"           { channel="ankersolix:solarbank:myaccount:sb1:settings#disable-grid-export" }
-Number:Power    Solarbank_PV_Limit               "PV Limit [%.0f W]"             { channel="ankersolix:solarbank:myaccount:sb1:settings#pv-limit" }
-Switch          Solarbank_Light                  "Status Light"                  { channel="ankersolix:solarbank:myaccount:sb1:settings#light-switch" }
+SB_Min_SOC.sendCommand(20)                  // set minimum SOC to 20 %
+SB_Max_Load.sendCommand(800)                // set max output load to 800 W
+SB_AC_Socket.sendCommand(ON)                // turn AC socket on
+SB_AC_Limit_MQTT.sendCommand(500)           // limit AC charging to 500 W
+SB_Disable_Export.sendCommand(ON)           // disable grid export
+SB_PV_Limit.sendCommand(1200)              // limit PV input to 1200 W
+SB_Light.sendCommand(OFF)                  // turn status light off
 ```
 
 #### How MQTT Settings Work Internally
@@ -365,30 +296,20 @@ Commands accept both plain numbers (`300`) and quantity types (`300 W`).
 **openHAB console:**
 
 ```
-openhab> openhab:send Solarbank_Output_Limit 300
-openhab> openhab:send Solarbank_Home_Load 200
-openhab> openhab:send Solarbank_Grid_Export OFF
+openhab> openhab:send SB_Output_Limit 300
+openhab> openhab:send SB_Home_Load 200
+openhab> openhab:send SB_Grid_Export OFF
 ```
 
 **Rules (DSL):**
 
 ```java
-Solarbank_Output_Limit.sendCommand(300)       // limit AC output to 300 W
-Solarbank_Home_Load.sendCommand(200)           // set home load preset to 200 W
-Solarbank_PV_Input_Limit.sendCommand(1200)     // limit PV input to 1200 W
-Solarbank_AC_Input_Limit.sendCommand(500)      // limit AC charging to 500 W
-Solarbank_Grid_Export.sendCommand(OFF)         // disable grid export (0 W)
-Solarbank_Grid_Export.sendCommand(ON)          // enable grid export
-```
-
-**Items definition:**
-
-```java
-Number:Power  Solarbank_Output_Limit    "Output Limit [%.0f W]"   { channel="ankersolix:solarbank:myaccount:sb1:restControl#output-limit" }
-Number:Power  Solarbank_Home_Load       "Home Load [%.0f W]"      { channel="ankersolix:solarbank:myaccount:sb1:restControl#home-load" }
-Number:Power  Solarbank_PV_Input_Limit  "PV Limit [%.0f W]"       { channel="ankersolix:solarbank:myaccount:sb1:restControl#pv-input-limit" }
-Number:Power  Solarbank_AC_Input_Limit  "AC Limit [%.0f W]"       { channel="ankersolix:solarbank:myaccount:sb1:restControl#ac-input-limit" }
-Switch        Solarbank_Grid_Export     "Grid Export"             { channel="ankersolix:solarbank:myaccount:sb1:restControl#grid-export-switch" }
+SB_Output_Limit.sendCommand(300)       // limit AC output to 300 W
+SB_Home_Load.sendCommand(200)          // set home load preset to 200 W
+SB_PV_Input_Limit.sendCommand(1200)    // limit PV input to 1200 W
+SB_AC_Input_Limit.sendCommand(500)     // limit AC charging to 500 W
+SB_Grid_Export.sendCommand(OFF)        // disable grid export (0 W)
+SB_Grid_Export.sendCommand(ON)         // enable grid export
 ```
 
 #### How REST Controls Work Internally
@@ -489,52 +410,255 @@ Bridge ankersolix:account:home "Anker Account" [
 ### `ankersolix.items`
 
 ```java
-// Power overview
-Number:Power    SB_PV_Power        "PV Power [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#photovoltaic-power" }
-Number:Power    SB_Output          "Output [%.0f W]"              <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#output-power" }
-Number:Power    SB_Home_Demand     "Home Demand [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#home-demand" }
+Group gSolarbank "Solarbank 3 Pro" <energy>
 
-// Battery
-Number:Power    SB_Bat_Power       "Battery [%.0f W]"             <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:battery#battery-power" }
-Number          SB_Bat_SOC         "SOC [%.0f %%]"                <battery> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:battery#battery-soc" }
+// Power overview (MQTT real-time)
+Number:Power       SB_PV_Power        "PV Power [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#photovoltaic-power" }
+Number:Power       SB_Output          "Output [%.0f W]"              <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#output-power" }
+Number:Power       SB_AC_Output       "AC Output [%.0f W]"           <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#ac-output-power" }
+Number:Power       SB_Home_Demand     "Home Demand [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:power#home-demand" }
 
-// Grid
-Number:Power    SB_Grid            "Grid [%.0f W]"                <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:grid#grid-power" }
+// Solar strings (MQTT real-time)
+Number:Power       SB_PV1             "PV String 1 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv1-power" }
+Number:Power       SB_PV2             "PV String 2 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv2-power" }
+Number:Power       SB_PV3             "PV String 3 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv3-power" }
+Number:Power       SB_PV4             "PV String 4 [%.0f W]"         <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:solar#pv4-power" }
 
-// Daily energy
-Number:Energy   SB_Daily_Solar     "Today Solar [%.2f kWh]"       <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-solar" }
-Number:Energy   SB_Daily_Import    "Today Import [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-grid-import" }
-Number:Energy   SB_Daily_Export    "Today Export [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-grid-export" }
+// Battery (MQTT real-time)
+Number:Power       SB_Bat_Power       "Battery [%.0f W]"             <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:battery#battery-power" }
+Number             SB_Bat_SOC         "SOC [%.0f %%]"                <battery> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:battery#battery-soc" }
+Number:Temperature SB_Temperature     "Temperature [%.1f °C]"        <temperature> (gSolarbank) { channel="ankersolix:solarbank:home:sb1:battery#temperature" }
 
-// Controls
-Number:Power    SB_Home_Load       "Home Load [%.0f W]"           <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#home-load" }
-Switch          SB_Grid_Export     "Grid Export"                  <switch>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#grid-export-switch" }
-Number          SB_Min_SOC         "Min SOC [%.0f %%]"            <battery> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#min-soc" }
+// Grid (MQTT real-time)
+Number:Power       SB_Grid            "Grid [%.0f W]"                <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:grid#grid-power" }
+
+// Energy - lifetime totals (MQTT)
+Number:Energy      SB_PV_Yield        "PV Yield Total [%.2f kWh]"    <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#pv-yield" }
+Number:Energy      SB_Charged         "Charged Total [%.2f kWh]"     <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#charged-energy" }
+Number:Energy      SB_Discharged      "Discharged Total [%.2f kWh]"  <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#discharged-energy" }
+
+// Energy - daily counters (REST)
+Number:Energy      SB_Daily_Solar     "Today Solar [%.2f kWh]"       <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-solar" }
+Number:Energy      SB_Daily_Charge    "Today Charge [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-charge" }
+Number:Energy      SB_Daily_Discharge "Today Discharge [%.2f kWh]"   <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-discharge" }
+Number:Energy      SB_Daily_Import    "Today Import [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-grid-import" }
+Number:Energy      SB_Daily_Export    "Today Export [%.2f kWh]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:energy#daily-grid-export" }
+
+// MQTT settings (require enableMqtt=true)
+Number             SB_Min_SOC         "Min SOC [%.0f %%]"            <battery> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#min-soc" }
+Number:Power       SB_Max_Load        "Max Load [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#max-load" }
+Switch             SB_AC_Socket       "AC Socket"                    <switch>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#ac-socket-switch" }
+Number:Power       SB_AC_Limit_MQTT   "AC Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#ac-input-limit" }
+Switch             SB_Disable_Export  "Disable Grid Export"          <switch>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#disable-grid-export" }
+Number:Power       SB_PV_Limit        "PV Limit [%.0f W]"            <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#pv-limit" }
+Switch             SB_Light           "Status Light"                 <light>   (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:settings#light-switch" }
+
+// REST controls (work without MQTT)
+Number:Power       SB_Home_Load       "Home Load [%.0f W]"           <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#home-load" }
+Number:Power       SB_Output_Limit    "Output Limit [%.0f W]"        <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#output-limit" }
+Number:Power       SB_PV_Input_Limit  "PV Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#pv-input-limit" }
+Number:Power       SB_AC_Input_Limit  "AC Input Limit [%.0f W]"      <energy>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#ac-input-limit" }
+Switch             SB_Grid_Export     "Grid Export"                  <switch>  (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:restControl#grid-export-switch" }
+
+// Device info
+String             SB_Firmware        "Firmware [%s]"                <text>    (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:info#firmware-version" }
+Switch             SB_Online          "Online"                       <network> (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:info#online-status" }
+DateTime           SB_Last_Update     "Last Update [%1$tF %1$tR]"    <time>    (gSolarbank)  { channel="ankersolix:solarbank:home:sb1:info#last-update" }
 ```
 
 ### `ankersolix.sitemap`
 
 ```perl
-sitemap ankersolix label="Solarbank" {
-    Frame label="Power" {
-        Text item=SB_PV_Power
-        Text item=SB_Output
-        Text item=SB_Home_Demand
-        Text item=SB_Grid
+sitemap ankersolix label="Solarbank 3 Pro" {
+    Frame label="Power Overview" {
+        Text item=SB_PV_Power        icon="energy"
+        Text item=SB_Output          icon="energy"
+        Text item=SB_AC_Output       icon="energy"
+        Text item=SB_Home_Demand     icon="energy"
+        Text item=SB_Grid            icon="energy"
+    }
+    Frame label="Solar Strings" {
+        Text item=SB_PV1             icon="energy"
+        Text item=SB_PV2             icon="energy"
+        Text item=SB_PV3             icon="energy"
+        Text item=SB_PV4             icon="energy"
     }
     Frame label="Battery" {
-        Text item=SB_Bat_Power
-        Text item=SB_Bat_SOC
+        Text item=SB_Bat_Power       icon="energy"
+        Text item=SB_Bat_SOC         icon="battery"
+        Text item=SB_Temperature     icon="temperature"
     }
-    Frame label="Today" {
-        Text item=SB_Daily_Solar
-        Text item=SB_Daily_Import
-        Text item=SB_Daily_Export
+    Frame label="Energy Today" {
+        Text item=SB_Daily_Solar     icon="energy"
+        Text item=SB_Daily_Charge    icon="energy"
+        Text item=SB_Daily_Discharge icon="energy"
+        Text item=SB_Daily_Import    icon="energy"
+        Text item=SB_Daily_Export    icon="energy"
     }
-    Frame label="Controls" {
-        Setpoint item=SB_Home_Load minValue=0 maxValue=800 step=50
-        Switch item=SB_Grid_Export
-        Setpoint item=SB_Min_SOC minValue=0 maxValue=100 step=5
+    Frame label="Energy Lifetime" {
+        Text item=SB_PV_Yield        icon="energy"
+        Text item=SB_Charged         icon="energy"
+        Text item=SB_Discharged      icon="energy"
+    }
+    Frame label="REST Controls" {
+        Setpoint item=SB_Home_Load      minValue=0  maxValue=800  step=50
+        Setpoint item=SB_Output_Limit   minValue=0  maxValue=800  step=50
+        Setpoint item=SB_PV_Input_Limit minValue=0  maxValue=3600 step=100
+        Setpoint item=SB_AC_Input_Limit minValue=0  maxValue=2400 step=100
+        Switch   item=SB_Grid_Export
+    }
+    Frame label="MQTT Settings" visibility=[SB_Online==ON] {
+        Setpoint item=SB_Min_SOC        minValue=0  maxValue=100  step=5
+        Setpoint item=SB_Max_Load       minValue=0  maxValue=800  step=50
+        Setpoint item=SB_PV_Limit       minValue=0  maxValue=3600 step=100
+        Setpoint item=SB_AC_Limit_MQTT  minValue=0  maxValue=2400 step=100
+        Switch   item=SB_AC_Socket
+        Switch   item=SB_Disable_Export
+        Switch   item=SB_Light
+    }
+    Frame label="Device Info" {
+        Text   item=SB_Firmware      icon="text"
+        Text   item=SB_Online        icon="network"
+        Text   item=SB_Last_Update   icon="time"
     }
 }
+```
+
+## Ideas for Rules
+
+Below are some rule ideas to get the most out of your Solarbank.
+Adapt thresholds and values to your setup.
+
+### Adjust home load to match solar production
+
+Automatically raise or lower the home load output so the Solarbank feeds exactly what the panels produce, avoiding grid export or unnecessary battery drain.
+
+```java
+rule "Match home load to PV"
+when
+    Item SB_PV_Power changed
+then
+    val pv = (SB_PV_Power.state as QuantityType<Power>).intValue
+    // Round down to nearest 50 W, clamp 0–800
+    val target = Math.min(800, Math.max(0, (pv / 50) * 50))
+    if (target != (SB_Home_Load.state as QuantityType<Power>).intValue) {
+        SB_Home_Load.sendCommand(target)
+    }
+end
+```
+
+### Protect battery at low SOC
+
+When the battery drops below 20 %, reduce the output to a minimum to preserve the remaining charge. Restore full output once the battery recovers above 40 %.
+
+```java
+rule "Low battery protection"
+when
+    Item SB_Bat_SOC changed
+then
+    val soc = (SB_Bat_SOC.state as Number).intValue
+    if (soc < 20) {
+        SB_Home_Load.sendCommand(100)
+        logInfo("solarbank", "Low SOC ({}%), reduced home load to 100 W", soc)
+    } else if (soc > 40 && (SB_Home_Load.state as QuantityType<Power>).intValue < 200) {
+        SB_Home_Load.sendCommand(400)
+        logInfo("solarbank", "SOC recovered ({}%), restored home load to 400 W", soc)
+    }
+end
+```
+
+### Disable grid export at night
+
+Turn off grid export after sunset and re-enable it at sunrise to keep stored energy for household use overnight.
+Requires the [Astro binding](https://www.openhab.org/addons/bindings/astro/) for `Astro_Sun_Rise_Start` and `Astro_Sun_Set_Start` items.
+
+```java
+rule "Disable export at sunset"
+when
+    Channel "astro:sun:local:set#event" triggered START
+then
+    SB_Grid_Export.sendCommand(OFF)
+end
+
+rule "Enable export at sunrise"
+when
+    Channel "astro:sun:local:rise#event" triggered START
+then
+    SB_Grid_Export.sendCommand(ON)
+end
+```
+
+### Battery temperature alert
+
+Send a notification when the battery temperature exceeds 45 °C.
+Uses the openHAB [notification action](https://www.openhab.org/docs/configuration/actions.html).
+
+```java
+rule "Battery overheat warning"
+when
+    Item SB_Temperature changed
+then
+    val temp = (SB_Temperature.state as QuantityType<Temperature>).doubleValue
+    if (temp > 45.0) {
+        sendNotification("you@example.com",
+            String::format("Solarbank battery temperature is %.1f °C — check ventilation!", temp))
+    }
+end
+```
+
+### Charge from grid during cheap tariff hours
+
+If you have a dynamic electricity tariff, enable AC charging at full power during cheap hours and disable it otherwise.
+
+```java
+rule "Cheap tariff AC charging"
+when
+    Time cron "0 0 2 * * ?"   // 02:00 — start of cheap tariff
+then
+    SB_AC_Input_Limit.sendCommand(2400)
+    logInfo("solarbank", "Cheap tariff started, AC charging at 2400 W")
+end
+
+rule "End cheap tariff AC charging"
+when
+    Time cron "0 0 6 * * ?"   // 06:00 — end of cheap tariff
+then
+    SB_AC_Input_Limit.sendCommand(0)
+    logInfo("solarbank", "Cheap tariff ended, AC charging disabled")
+end
+```
+
+### Turn off status light at night
+
+Disable the LED at bedtime and turn it back on in the morning.
+
+```java
+rule "Light off at night"
+when
+    Time cron "0 0 22 * * ?"
+then
+    SB_Light.sendCommand(OFF)
+end
+
+rule "Light on in the morning"
+when
+    Time cron "0 0 7 * * ?"
+then
+    SB_Light.sendCommand(ON)
+end
+```
+
+### Log daily energy summary at midnight
+
+Write a summary of the day's energy production and consumption to the openHAB log just before the daily counters reset.
+
+```java
+rule "Daily energy summary"
+when
+    Time cron "0 59 23 * * ?"
+then
+    logInfo("solarbank", "Daily summary — Solar: {} kWh, Charge: {} kWh, Discharge: {} kWh, Import: {} kWh, Export: {} kWh",
+        SB_Daily_Solar.state, SB_Daily_Charge.state, SB_Daily_Discharge.state,
+        SB_Daily_Import.state, SB_Daily_Export.state)
+end
 ```
