@@ -14,8 +14,10 @@ package org.openhab.binding.ankersolix.internal.handler;
 
 import static org.openhab.binding.ankersolix.internal.AnkerSolixBindingConstants.*;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Energy;
@@ -53,8 +55,11 @@ public class SolarbankHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SolarbankHandler.class);
 
+    private static final int COMMAND_GRACE_PERIOD_SECONDS = 300;
+
     private @Nullable String siteId;
     private @Nullable String deviceSn;
+    private final Map<String, Instant> recentCommands = new ConcurrentHashMap<>();
 
     public SolarbankHandler(Thing thing) {
         super(thing);
@@ -428,19 +433,19 @@ public class SolarbankHandler extends BaseThingHandler {
         // Unwrap the "attributes" object if present
         JsonObject attrs = data.has("attributes") ? data.getAsJsonObject("attributes") : data;
 
-        if (attrs.has("power_limit")) {
+        if (attrs.has("power_limit") && !wasRecentlyCommanded(CHANNEL_REST_OUTPUT_LIMIT)) {
             updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_OUTPUT_LIMIT),
                     new QuantityType<>(attrs.get("power_limit").getAsDouble(), Units.WATT));
         }
-        if (attrs.has("pv_power_limit")) {
+        if (attrs.has("pv_power_limit") && !wasRecentlyCommanded(CHANNEL_REST_PV_LIMIT)) {
             updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_PV_LIMIT),
                     new QuantityType<>(attrs.get("pv_power_limit").getAsDouble(), Units.WATT));
         }
-        if (attrs.has("ac_power_limit")) {
+        if (attrs.has("ac_power_limit") && !wasRecentlyCommanded(CHANNEL_REST_AC_LIMIT)) {
             updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_AC_LIMIT),
                     new QuantityType<>(attrs.get("ac_power_limit").getAsDouble(), Units.WATT));
         }
-        if (attrs.has("switch_0w")) {
+        if (attrs.has("switch_0w") && !wasRecentlyCommanded(CHANNEL_REST_GRID_EXPORT)) {
             // switch_0w: 0 = grid export ON, 1 = grid export OFF (inverted)
             boolean exportEnabled = attrs.get("switch_0w").getAsInt() == 0;
             updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_GRID_EXPORT),
@@ -453,6 +458,10 @@ public class SolarbankHandler extends BaseThingHandler {
      * The API wraps the data as: {"param_data": "{\"default_home_load\":200,...}"}
      */
     public void updateHomeLoadFromParam(JsonObject paramResponse) {
+        if (wasRecentlyCommanded(CHANNEL_REST_HOME_LOAD)) {
+            return;
+        }
+
         JsonObject data = unwrapParamData(paramResponse);
 
         if (data.has("default_home_load")) {
@@ -508,6 +517,7 @@ public class SolarbankHandler extends BaseThingHandler {
                     int watts = extractWatts(command);
                     if (watts >= 0) {
                         apiClient.setHomeLoad(site, watts);
+                        markCommandSent(CHANNEL_REST_HOME_LOAD);
                         updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_HOME_LOAD),
                                 new QuantityType<>(watts, Units.WATT));
                         logger.debug("Set home load to {} W via REST", watts);
@@ -518,6 +528,7 @@ public class SolarbankHandler extends BaseThingHandler {
                     int outputLimit = extractWatts(command);
                     if (outputLimit >= 0) {
                         apiClient.setDeviceAttributes(sn, Map.of("power_limit", outputLimit));
+                        markCommandSent(CHANNEL_REST_OUTPUT_LIMIT);
                         updateState(
                                 new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_OUTPUT_LIMIT),
                                 new QuantityType<>(outputLimit, Units.WATT));
@@ -529,6 +540,7 @@ public class SolarbankHandler extends BaseThingHandler {
                     int pvLimit = extractWatts(command);
                     if (pvLimit >= 0) {
                         apiClient.setDeviceAttributes(sn, Map.of("pv_power_limit", pvLimit));
+                        markCommandSent(CHANNEL_REST_PV_LIMIT);
                         updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_PV_LIMIT),
                                 new QuantityType<>(pvLimit, Units.WATT));
                         logger.debug("Set PV input limit to {} W via REST", pvLimit);
@@ -539,6 +551,7 @@ public class SolarbankHandler extends BaseThingHandler {
                     int acLimit = extractWatts(command);
                     if (acLimit >= 0) {
                         apiClient.setDeviceAttributes(sn, Map.of("ac_power_limit", acLimit));
+                        markCommandSent(CHANNEL_REST_AC_LIMIT);
                         updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_AC_LIMIT),
                                 new QuantityType<>(acLimit, Units.WATT));
                         logger.debug("Set AC input limit to {} W via REST", acLimit);
@@ -550,6 +563,7 @@ public class SolarbankHandler extends BaseThingHandler {
                         // switch_0w: 0 = export ON, 1 = export OFF (inverted!)
                         int switchVal = command == OnOffType.ON ? 0 : 1;
                         apiClient.setDeviceAttributes(sn, Map.of("switch_0w", switchVal));
+                        markCommandSent(CHANNEL_REST_GRID_EXPORT);
                         updateState(
                                 new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_GRID_EXPORT),
                                 (OnOffType) command);
@@ -563,6 +577,15 @@ public class SolarbankHandler extends BaseThingHandler {
         } catch (Exception e) {
             logger.warn("Failed to send REST control command for {}: {}", channelId, e.getMessage());
         }
+    }
+
+    private void markCommandSent(String channelId) {
+        recentCommands.put(channelId, Instant.now());
+    }
+
+    private boolean wasRecentlyCommanded(String channelId) {
+        Instant sent = recentCommands.get(channelId);
+        return sent != null && Instant.now().isBefore(sent.plusSeconds(COMMAND_GRACE_PERIOD_SECONDS));
     }
 
     private int extractWatts(Command command) {
