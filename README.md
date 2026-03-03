@@ -3,6 +3,9 @@
 This binding integrates the **Anker Solix Solarbank 3 E2700 Pro** (model A17C5) energy storage system with openHAB.
 It communicates with the Anker cloud API to provide real-time monitoring of power flows, battery state, and energy counters, as well as control of device settings.
 
+**It has been tested with Anker Solix Solarbank 3 E2700 Pro only. No idea if it may work with other models !** 
+
+
 Two data transport modes are supported:
 
 - **REST API polling** (default) — periodic polling of the Anker cloud, suitable for basic monitoring
