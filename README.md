@@ -116,7 +116,7 @@ Bridge ankersolix:account:myaccount "Anker Account" [
 ] {
     Thing solarbank mysolarbank "Solarbank 3 Pro" [
         siteId="XXXXXXXXXXXXXXXX",
-        deviceSn="YYYYYYYYYYYYYYYY"
+        deviceSn="SNYYYYYYYYYYYYYY"
     ]
 }
 ```
@@ -162,7 +162,7 @@ Channel IDs use the format `ankersolix:solarbank:<bridge>:<thing>:<channel>`.
 | `SB_PV_Limit` | Number:Power | `settings#pv-limit` | MQTT | R/W | PV input limit in watts                                       |
 | `SB_Light` | Switch | `settings#light-switch` | MQTT | R/W | Status LED light on/off                                       |
 | **REST Control** | | | | |                                                               |
-| `SB_Home_Load` | Number:Power | `restControl#home-load` | REST | R/W | Home load preset power in watts (via schedule)                |
+| `SB_Home_Load` | Number:Power | `restControl#home-load` | REST | W | Home load preset power in watts (write-only, use persistence) |
 | `SB_Output_Limit` | Number:Power | `restControl#output-limit` | REST | R/W | AC output power limit in watts                                |
 | `SB_PV_Input_Limit` | Number:Power | `restControl#pv-input-limit` | REST | R/W | PV input power limit in watts                                 |
 | `SB_AC_Input_Limit` | Number:Power | `restControl#ac-input-limit` | REST | R/W | AC input/charging limit in watts                              |
@@ -171,6 +171,7 @@ Channel IDs use the format `ankersolix:solarbank:<bridge>:<thing>:<channel>`.
 | `SB_Firmware` | String | `info#firmware-version` | REST | R | Current firmware version string                                |
 | `SB_Online` | Switch | `info#online-status` | REST | R | Device online/offline status                                   |
 | `SB_Last_Update` | DateTime | `info#last-update` | Both | R | Timestamp of last data update                                  |
+| `SB_MQTT_Last_Update` | DateTime | `info#mqtt-last-update` | MQTT | R | Timestamp of last MQTT telemetry message                       |
 
 ## Channels
 
@@ -283,7 +284,7 @@ These channels work with REST API polling only and do not require MQTT.
 
 | Channel                          | Type         | Description                                        | API Mechanism                     |
 |----------------------------------|--------------|----------------------------------------------------|-----------------------------------|
-| `restControl#home-load`          | Number:Power | Home load preset power (W), set via schedule API   | `setHomeLoad` (schedule API)      |
+| `restControl#home-load`          | Number:Power | Home load preset power (W), write-only (see note)  | `setHomeLoad` (schedule API)      |
 | `restControl#output-limit`       | Number:Power | AC output power limit (W)                          | Device attribute `power_limit`    |
 | `restControl#pv-input-limit`     | Number:Power | PV input power limit (W)                           | Device attribute `pv_power_limit` |
 | `restControl#ac-input-limit`     | Number:Power | AC input/charging limit (W)                        | Device attribute `ac_power_limit` |
@@ -314,19 +315,41 @@ SB_Grid_Export.sendCommand(ON)         // enable grid export
 
 #### How REST Controls Work Internally
 
-- **`home-load`** — calls the Anker schedule API to set the default home load output power
+- **`home-load`** — calls the Anker schedule API to set the default home load output power. **This channel is write-only** because the Anker API stores the home load as part of a daily schedule structure, and the `default_home_load` field returned by the API always reports the device default (typically 200 W) rather than the active schedule value. The binding therefore does not poll this value — the channel only updates when you send a command. **Use openHAB persistence to preserve the value across restarts** (see [Persistence for home-load](#persistence-for-home-load) below).
 - **`output-limit`**, **`pv-input-limit`**, **`ac-input-limit`** — set device attributes (`power_limit`, `pv_power_limit`, `ac_power_limit`) via the Anker cloud API
 - **`grid-export-switch`** — sets the `switch_0w` device attribute (the API value is inverted: `0` = export ON, `1` = export OFF; the binding handles this automatically)
 
 All REST control commands go through the Anker cloud REST API and are subject to rate limiting (max 5 requests per 60 seconds).
 
+#### Persistence for home-load
+
+Since `restControl#home-load` is write-only, the channel state will be `NULL` after an openHAB restart unless you configure persistence to restore the last commanded value.
+
+**Recommended setup using MapDB:**
+
+1. Install the **MapDB** persistence add-on (Settings > Add-ons > Persistence > MapDB)
+2. Add the following to your `mapdb.persist` file (or create it):
+
+```java
+Strategies {
+    default = everyChange
+}
+
+Items {
+    SB_Home_Load : strategy = everyChange, restoreOnStartup
+}
+```
+
+This saves every command you send to `SB_Home_Load` and automatically restores the last value when openHAB starts. Any other persistence service (rrd4j, InfluxDB, JDBC, etc.) that supports `restoreOnStartup` works as well.
+
 ### Info (read-only)
 
 | Channel                  | Type     | Description             |
 |--------------------------|----------|-------------------------|
-| `info#firmware-version`  | String   | Current firmware version |
-| `info#online-status`     | Switch   | Device online/offline    |
-| `info#last-update`       | DateTime | Timestamp of last update |
+| `info#firmware-version`  | String   | Current firmware version      |
+| `info#online-status`     | Switch   | Device online/offline         |
+| `info#last-update`       | DateTime | Timestamp of last update      |
+| `info#mqtt-last-update`  | DateTime | Timestamp of last MQTT update |
 
 ## REST Polling vs. MQTT
 
@@ -442,8 +465,8 @@ Bridge ankersolix:account:myaccount "Anker Account" [
     enableMqtt=true
 ] {
     Thing solarbank mysolarbank "Solarbank 3 Pro" [
-        siteId="ABC123DEF456",
-        deviceSn="SN1234567890"
+        siteId="xxxxx",
+        deviceSn="SNyyyyyy"
     ]
 }
 ```
@@ -505,6 +528,8 @@ Switch             SB_Grid_Export     "Grid Export"                  <switch>  (
 String             SB_Firmware        "Firmware [%s]"                <text>    (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:info#firmware-version" }
 Switch             SB_Online          "Online"                       <network> (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:info#online-status" }
 DateTime           SB_Last_Update     "Last Update [%1$tF %1$tR]"    <time>    (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:info#last-update" }
+DateTime           SB_MQTT_Update     "MQTT Update [%1$tF %1$tR]"    <time>    (gSolarbank)  { channel="ankersolix:solarbank:myaccount:mysolarbank:info#mqtt-last-update" }
+DateTime              SB_MQTT_Last_Update                  "MQTT Last Update [%1$tF %1$tR]"    <time>           (gSolarbank)           {channel="ankersolix:solarbank:myaccount:mysolarbank:info#mqtt-last-update"}
 ```
 
 ### `ankersolix.sitemap`
@@ -561,6 +586,7 @@ sitemap ankersolix label="Solarbank 3 Pro" {
         Text   item=SB_Firmware      icon="text"
         Text   item=SB_Online        icon="network"
         Text   item=SB_Last_Update   icon="time"
+        Text   item=SB_MQTT_Last_Update   icon="time"
     }
 }
 ```

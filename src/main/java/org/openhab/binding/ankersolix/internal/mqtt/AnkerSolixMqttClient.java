@@ -20,7 +20,9 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,7 +36,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -48,7 +50,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 @NonNullByDefault
-public class AnkerSolixMqttClient implements MqttCallback {
+public class AnkerSolixMqttClient implements MqttCallbackExtended {
 
     private static final Logger logger = LoggerFactory.getLogger(AnkerSolixMqttClient.class);
     private static final int REALTIME_TRIGGER_INTERVAL_SECONDS = 120;
@@ -61,8 +63,14 @@ public class AnkerSolixMqttClient implements MqttCallback {
     private final Gson gson;
 
     private @Nullable MqttClient client;
-    private @Nullable ScheduledFuture<?> triggerJob;
+    private final List<ScheduledFuture<?>> triggerJobs = new ArrayList<>();
     private @Nullable String appName;
+
+    /** Tracks device subscriptions so they can be restored after reconnection. */
+    private final List<DeviceSubscription> subscriptions = new ArrayList<>();
+
+    private record DeviceSubscription(String appName, String productCode, String deviceSn) {
+    }
 
     public AnkerSolixMqttClient(MqttMessageListener listener, ScheduledExecutorService scheduler) {
         this.listener = listener;
@@ -109,33 +117,46 @@ public class AnkerSolixMqttClient implements MqttCallback {
      * Subscribe to device telemetry and start realtime trigger.
      */
     public void subscribeAndTrigger(String appName, String productCode, String deviceSn) throws MqttException {
+        // Store subscription for reconnection
+        DeviceSubscription sub = new DeviceSubscription(appName, productCode, deviceSn);
+        if (!subscriptions.contains(sub)) {
+            subscriptions.add(sub);
+        }
+
         MqttClient mqttClient = this.client;
         if (mqttClient == null || !mqttClient.isConnected()) {
             return;
         }
 
-        // Use # wildcard to catch all subtopics for this device
-        String topic = "dt/" + appName + "/" + productCode + "/" + deviceSn + "/#";
-        mqttClient.subscribe(topic, 0);
-        logger.debug("Subscribed to MQTT topic: {}", topic);
-
-        // Send initial realtime trigger
-        sendRealtimeTrigger(deviceSn, productCode);
+        subscribeDevice(mqttClient, appName, productCode, deviceSn);
 
         // Schedule periodic realtime triggers
-        triggerJob = scheduler.scheduleWithFixedDelay(
+        ScheduledFuture<?> job = scheduler.scheduleWithFixedDelay(
                 () -> sendRealtimeTrigger(deviceSn, productCode),
                 REALTIME_TRIGGER_INTERVAL_SECONDS,
                 REALTIME_TRIGGER_INTERVAL_SECONDS,
                 TimeUnit.SECONDS);
+        triggerJobs.add(job);
+    }
+
+    /**
+     * Subscribe to a single device topic and send an initial realtime trigger.
+     */
+    private void subscribeDevice(MqttClient mqttClient, String appName, String productCode, String deviceSn)
+            throws MqttException {
+        String topic = "dt/" + appName + "/" + productCode + "/" + deviceSn + "/#";
+        mqttClient.subscribe(topic, 0);
+        logger.debug("Subscribed to MQTT topic: {}", topic);
+
+        sendRealtimeTrigger(deviceSn, productCode);
     }
 
     public void disconnect() {
-        ScheduledFuture<?> job = triggerJob;
-        if (job != null) {
+        for (ScheduledFuture<?> job : triggerJobs) {
             job.cancel(true);
-            triggerJob = null;
         }
+        triggerJobs.clear();
+        subscriptions.clear();
 
         MqttClient mqttClient = this.client;
         if (mqttClient != null) {
@@ -194,11 +215,31 @@ public class AnkerSolixMqttClient implements MqttCallback {
         publishCommand(deviceSn, productCode, payload);
     }
 
-    // --- MqttCallback ---
+    // --- MqttCallbackExtended ---
+
+    @Override
+    public void connectComplete(boolean reconnect, @Nullable String serverURI) {
+        if (reconnect) {
+            logger.info("MQTT reconnected to {}, re-subscribing {} device(s)", serverURI, subscriptions.size());
+            MqttClient mqttClient = this.client;
+            if (mqttClient == null) {
+                return;
+            }
+            for (DeviceSubscription sub : subscriptions) {
+                try {
+                    subscribeDevice(mqttClient, sub.appName(), sub.productCode(), sub.deviceSn());
+                } catch (MqttException e) {
+                    logger.warn("Failed to re-subscribe device {} after reconnect: {}", sub.deviceSn(),
+                            e.getMessage());
+                }
+            }
+        }
+    }
 
     @Override
     public void connectionLost(@Nullable Throwable cause) {
-        logger.warn("MQTT connection lost: {}", cause != null ? cause.getMessage() : "unknown");
+        logger.warn("MQTT connection lost (will auto-reconnect): {}",
+                cause != null ? cause.getMessage() : "unknown");
     }
 
     @Override

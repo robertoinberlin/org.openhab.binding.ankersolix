@@ -265,6 +265,10 @@
             </channel>
             <channel id="online-status" typeId="online-status"/>
             <channel id="last-update" typeId="last-update"/>
+            <channel id="mqtt-last-update" typeId="last-update">
+                <label>MQTT Last Update</label>
+                <description>Timestamp of the last received MQTT telemetry message</description>
+            </channel>
         </channels>
     </channel-group-type>
 

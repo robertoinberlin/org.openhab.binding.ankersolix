@@ -200,13 +200,11 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
                             }
                         }
 
-                        // Poll home load schedule (param_type=6)
-                        try {
-                            var scheduleParams = client.getDeviceParam(siteId, 6);
-                            handler.updateHomeLoadFromParam(scheduleParams);
-                        } catch (Exception e) {
-                            logger.debug("Failed to get home load params: {}", e.getMessage());
-                        }
+                        // Note: home-load (param_type=6) is NOT polled because the API's
+                        // "default_home_load" field returns the device default (200W), not the
+                        // active schedule value. The actual home load is embedded in the daily
+                        // schedule structure and cannot be reliably read back as a single value.
+                        // Use openHAB persistence to restore the last commanded value.
                     }
                 }
             }

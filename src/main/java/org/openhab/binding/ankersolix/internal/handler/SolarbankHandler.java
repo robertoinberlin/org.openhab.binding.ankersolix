@@ -418,9 +418,10 @@ public class SolarbankHandler extends BaseThingHandler {
                     on ? OnOffType.ON : OnOffType.OFF);
         }
 
-        // Last update
-        updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_LAST_UPDATE),
-                new DateTimeType(ZonedDateTime.now()));
+        // Last update timestamps
+        DateTimeType now = new DateTimeType(ZonedDateTime.now());
+        updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_LAST_UPDATE), now);
+        updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_MQTT_LAST_UPDATE), now);
 
         updateStatus(ThingStatus.ONLINE);
     }
@@ -453,23 +454,10 @@ public class SolarbankHandler extends BaseThingHandler {
         }
     }
 
-    /**
-     * Update home load channel state from device param response.
-     * The API wraps the data as: {"param_data": "{\"default_home_load\":200,...}"}
-     */
-    public void updateHomeLoadFromParam(JsonObject paramResponse) {
-        if (wasRecentlyCommanded(CHANNEL_REST_HOME_LOAD)) {
-            return;
-        }
-
-        JsonObject data = unwrapParamData(paramResponse);
-
-        if (data.has("default_home_load")) {
-            double homeLoad = data.get("default_home_load").getAsDouble();
-            updateState(new ChannelUID(getThing().getUID(), GROUP_REST_CONTROL, CHANNEL_REST_HOME_LOAD),
-                    new QuantityType<>(homeLoad, Units.WATT));
-        }
-    }
+    // Note: home-load is NOT read from the API because the "default_home_load" field
+    // returns the device default (200W), not the active schedule value. The actual value
+    // is embedded in the daily schedule and cannot be reliably read back.
+    // The channel is only updated by user commands. Use openHAB persistence to restore it.
 
     /**
      * Unwrap param_data: the API returns {"param_data": "{json string}"}.
