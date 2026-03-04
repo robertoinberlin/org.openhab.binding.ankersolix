@@ -151,6 +151,34 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         sendRealtimeTrigger(deviceSn, productCode);
     }
 
+    /**
+     * Reconnect with fresh MQTT credentials from the REST API.
+     * Preserves existing subscriptions and trigger schedules.
+     */
+    public void reconnect(MqttInfoResponse mqttInfo) throws Exception {
+        // Close old client without clearing subscriptions or trigger jobs
+        MqttClient oldClient = this.client;
+        this.client = null;
+        closeClient(oldClient);
+
+        // Connect with fresh credentials
+        connect(mqttInfo);
+
+        // Re-subscribe all stored device subscriptions
+        MqttClient newClient = this.client;
+        if (newClient != null && newClient.isConnected()) {
+            for (DeviceSubscription sub : subscriptions) {
+                try {
+                    subscribeDevice(newClient, sub.appName(), sub.productCode(), sub.deviceSn());
+                } catch (MqttException e) {
+                    logger.warn("Failed to re-subscribe {} after credential refresh: {}", sub.deviceSn(),
+                            e.getMessage());
+                }
+            }
+            logger.info("MQTT refreshed credentials, re-subscribed {} device(s)", subscriptions.size());
+        }
+    }
+
     public void disconnect() {
         for (ScheduledFuture<?> job : triggerJobs) {
             job.cancel(true);
@@ -158,7 +186,11 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         triggerJobs.clear();
         subscriptions.clear();
 
-        MqttClient mqttClient = this.client;
+        closeClient(this.client);
+        this.client = null;
+    }
+
+    private void closeClient(@Nullable MqttClient mqttClient) {
         if (mqttClient != null) {
             try {
                 if (mqttClient.isConnected()) {
@@ -166,9 +198,8 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
                 }
                 mqttClient.close();
             } catch (MqttException e) {
-                logger.debug("Error disconnecting MQTT: {}", e.getMessage());
+                logger.debug("Error closing MQTT client: {}", e.getMessage());
             }
-            this.client = null;
         }
     }
 
@@ -306,7 +337,7 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
             publishCommand(deviceSn, productCode, payload);
             logger.debug("Sent realtime trigger for {} (timeout={}s)", deviceSn, REALTIME_TRIGGER_TIMEOUT_SECONDS);
         } catch (Exception e) {
-            logger.debug("Failed to send realtime trigger: {}", e.getMessage());
+            logger.warn("Failed to send realtime trigger for {}: {}", deviceSn, e.getMessage());
         }
     }
 

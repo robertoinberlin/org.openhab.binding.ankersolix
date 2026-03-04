@@ -7,7 +7,7 @@
 
     <groupId>org.openhab.addons.bundles</groupId>
     <artifactId>org.openhab.binding.ankersolix</artifactId>
-    <version>5.1.3-SNAPSHOT</version>
+    <version>5.1.4-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>openHAB Add-ons :: Bundles :: Anker Solix Binding</name>

@@ -42,10 +42,14 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
 
     private final Logger logger = LoggerFactory.getLogger(AnkerSolixAccountHandler.class);
 
+    /** Re-fetch MQTT certificates every 5 minutes to prevent expiry. */
+    private static final int MQTT_REFRESH_INTERVAL_MINUTES = 5;
+
     private final HttpClient httpClient;
     private @Nullable AnkerSolixApiClient apiClient;
     private @Nullable AnkerSolixMqttClient mqttClient;
     private @Nullable ScheduledFuture<?> pollingJob;
+    private @Nullable ScheduledFuture<?> mqttRefreshJob;
     private final Map<String, SolarbankHandler> childHandlers = new ConcurrentHashMap<>();
 
     private int pollCount = 0;
@@ -143,8 +147,35 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
             }
 
             logger.info("MQTT client connected to {}", mqttInfo.endpointAddr);
+
+            // Schedule periodic credential refresh to prevent certificate expiry
+            mqttRefreshJob = scheduler.scheduleWithFixedDelay(this::refreshMqtt,
+                    MQTT_REFRESH_INTERVAL_MINUTES, MQTT_REFRESH_INTERVAL_MINUTES, TimeUnit.MINUTES);
         } catch (Exception e) {
             logger.warn("Failed to initialize MQTT: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Re-fetch MQTT credentials and reconnect to prevent certificate expiry.
+     * AWS IoT Core temporary certificates have a short TTL; without periodic
+     * refresh the connection silently dies and realtime triggers stop working.
+     */
+    private void refreshMqtt() {
+        AnkerSolixApiClient client = this.apiClient;
+        AnkerSolixMqttClient mqtt = this.mqttClient;
+        if (client == null || mqtt == null) {
+            return;
+        }
+
+        try {
+            if (!client.isAuthenticated()) {
+                client.authenticate();
+            }
+            MqttInfoResponse mqttInfo = client.getMqttInfo();
+            mqtt.reconnect(mqttInfo);
+        } catch (Exception e) {
+            logger.warn("Failed to refresh MQTT credentials: {}", e.getMessage());
         }
     }
 
@@ -228,6 +259,12 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
         if (job != null) {
             job.cancel(true);
             pollingJob = null;
+        }
+
+        ScheduledFuture<?> refreshJob = mqttRefreshJob;
+        if (refreshJob != null) {
+            refreshJob.cancel(true);
+            mqttRefreshJob = null;
         }
 
         AnkerSolixMqttClient mqtt = mqttClient;
