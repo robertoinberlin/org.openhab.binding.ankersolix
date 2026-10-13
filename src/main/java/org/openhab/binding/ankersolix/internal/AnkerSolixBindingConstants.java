@@ -89,4 +89,5 @@ public class AnkerSolixBindingConstants {
     public static final String CHANNEL_ONLINE_STATUS = "online-status";
     public static final String CHANNEL_LAST_UPDATE = "last-update";
     public static final String CHANNEL_MQTT_LAST_UPDATE = "mqtt-last-update";
+    public static final String CHANNEL_MQTT_CONNECTED = "mqtt-connected";
 }

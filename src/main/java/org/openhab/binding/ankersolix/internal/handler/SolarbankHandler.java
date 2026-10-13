@@ -426,6 +426,11 @@ public class SolarbankHandler extends BaseThingHandler {
         updateStatus(ThingStatus.ONLINE);
     }
 
+    public void updateMqttConnected(boolean connected) {
+        updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_MQTT_CONNECTED),
+                connected ? OnOffType.ON : OnOffType.OFF);
+    }
+
     /**
      * Update REST control channel states from device attributes.
      * The API returns: {"device_sn":"...", "attributes":{"pv_power_limit":3600,...}}

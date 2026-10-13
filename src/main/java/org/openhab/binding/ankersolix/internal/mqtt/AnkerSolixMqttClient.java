@@ -20,6 +20,7 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -55,8 +56,14 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
     private static final Logger logger = LoggerFactory.getLogger(AnkerSolixMqttClient.class);
     private static final int REALTIME_TRIGGER_INTERVAL_SECONDS = 120;
     private static final int REALTIME_TRIGGER_TIMEOUT_SECONDS = 180;
+    private static final int HEALTH_CHECK_INTERVAL_SECONDS = 60;
+    private static final int STALE_THRESHOLD_SECONDS = 360;
+    private static final int RECONNECT_DELAY_SECONDS = 15;
+    private static final int RECONNECT_BURST_COUNT = 3;
+    private static final int RECONNECT_BURST_DELAY_SECONDS = 10;
 
     private final MqttMessageListener listener;
+    private final MqttConnectionListener connectionListener;
     private final MqttMessageParser parser;
     private final MqttCommandBuilder commandBuilder;
     private final ScheduledExecutorService scheduler;
@@ -64,7 +71,9 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
 
     private @Nullable MqttClient client;
     private final List<ScheduledFuture<?>> triggerJobs = new ArrayList<>();
+    private @Nullable ScheduledFuture<?> healthCheckJob;
     private @Nullable String appName;
+    private volatile Instant lastMessageReceived = Instant.EPOCH;
 
     /** Tracks device subscriptions so they can be restored after reconnection. */
     private final List<DeviceSubscription> subscriptions = new ArrayList<>();
@@ -72,8 +81,10 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
     private record DeviceSubscription(String appName, String productCode, String deviceSn) {
     }
 
-    public AnkerSolixMqttClient(MqttMessageListener listener, ScheduledExecutorService scheduler) {
+    public AnkerSolixMqttClient(MqttMessageListener listener, MqttConnectionListener connectionListener,
+            ScheduledExecutorService scheduler) {
         this.listener = listener;
+        this.connectionListener = connectionListener;
         this.parser = new MqttMessageParser();
         this.commandBuilder = new MqttCommandBuilder();
         this.scheduler = scheduler;
@@ -101,7 +112,9 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         options.setCleanSession(true);
         options.setKeepAliveInterval(60);
         options.setConnectionTimeout(30);
-        options.setAutomaticReconnect(true);
+        // Paho's auto-reconnect would reuse the old (possibly expired) certificate;
+        // reconnects are driven by connectionLost() and the health check instead.
+        options.setAutomaticReconnect(false);
 
         // Use tcp:// placeholder in constructor to avoid ServiceLoader validation;
         // the actual ssl:// URI from setServerURIs() is used at connect time.
@@ -110,7 +123,10 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         mqttClient.connect(options);
 
         this.client = mqttClient;
+        this.lastMessageReceived = Instant.now();
         logger.info("MQTT connected to {} as {}", mqttInfo.endpointAddr, clientId);
+        connectionListener.onMqttConnectionStateChanged(true);
+        startHealthCheck();
     }
 
     /**
@@ -159,6 +175,7 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         // Close old client without clearing subscriptions or trigger jobs
         MqttClient oldClient = this.client;
         this.client = null;
+        connectionListener.onMqttConnectionStateChanged(false);
         closeClient(oldClient);
 
         // Connect with fresh credentials
@@ -175,11 +192,13 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
                             e.getMessage());
                 }
             }
+            scheduleBurstTriggers();
             logger.info("MQTT refreshed credentials, re-subscribed {} device(s)", subscriptions.size());
         }
     }
 
     public void disconnect() {
+        stopHealthCheck();
         for (ScheduledFuture<?> job : triggerJobs) {
             job.cancel(true);
         }
@@ -188,6 +207,7 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
 
         closeClient(this.client);
         this.client = null;
+        connectionListener.onMqttConnectionStateChanged(false);
     }
 
     private void closeClient(@Nullable MqttClient mqttClient) {
@@ -206,6 +226,15 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
     public boolean isConnected() {
         MqttClient mqttClient = this.client;
         return mqttClient != null && mqttClient.isConnected();
+    }
+
+    public Instant getLastMessageReceived() {
+        return lastMessageReceived;
+    }
+
+    /** True if no MQTT message arrived within the stale threshold. */
+    public boolean isStale() {
+        return lastMessageReceived.plusSeconds(STALE_THRESHOLD_SECONDS).isBefore(Instant.now());
     }
 
     // --- Command methods ---
@@ -252,6 +281,7 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
     public void connectComplete(boolean reconnect, @Nullable String serverURI) {
         if (reconnect) {
             logger.info("MQTT reconnected to {}, re-subscribing {} device(s)", serverURI, subscriptions.size());
+            connectionListener.onMqttConnectionStateChanged(true);
             MqttClient mqttClient = this.client;
             if (mqttClient == null) {
                 return;
@@ -269,8 +299,9 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
 
     @Override
     public void connectionLost(@Nullable Throwable cause) {
-        logger.warn("MQTT connection lost (will auto-reconnect): {}",
-                cause != null ? cause.getMessage() : "unknown");
+        logger.warn("MQTT connection lost: {}", cause != null ? cause.getMessage() : "unknown");
+        connectionListener.onMqttConnectionStateChanged(false);
+        scheduler.schedule(connectionListener::onMqttReconnectNeeded, RECONNECT_DELAY_SECONDS, TimeUnit.SECONDS);
     }
 
     @Override
@@ -279,6 +310,7 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
             return;
         }
 
+        lastMessageReceived = Instant.now();
         logger.trace("MQTT message on topic: {}, size: {} bytes", topic, message.getPayload().length);
 
         try {
@@ -330,6 +362,53 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
     }
 
     // --- Private helpers ---
+
+    private void startHealthCheck() {
+        stopHealthCheck();
+        healthCheckJob = scheduler.scheduleWithFixedDelay(this::checkHealth, HEALTH_CHECK_INTERVAL_SECONDS,
+                HEALTH_CHECK_INTERVAL_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void stopHealthCheck() {
+        ScheduledFuture<?> job = healthCheckJob;
+        if (job != null) {
+            job.cancel(true);
+            healthCheckJob = null;
+        }
+    }
+
+    /**
+     * Detect a dead connection or a connection that stopped delivering data, and request a reconnect.
+     */
+    private void checkHealth() {
+        MqttClient mqttClient = this.client;
+        if (mqttClient == null) {
+            return;
+        }
+        if (!mqttClient.isConnected()) {
+            logger.warn("MQTT health check: client disconnected, requesting reconnect");
+            connectionListener.onMqttConnectionStateChanged(false);
+            connectionListener.onMqttReconnectNeeded();
+            return;
+        }
+        if (isStale()) {
+            logger.warn("MQTT health check: no messages received for {}s, requesting reconnect with fresh credentials",
+                    STALE_THRESHOLD_SECONDS);
+            connectionListener.onMqttReconnectNeeded();
+        }
+    }
+
+    /** Send a few extra realtime triggers after a reconnect; the first one is sometimes ignored. */
+    private void scheduleBurstTriggers() {
+        for (int i = 1; i < RECONNECT_BURST_COUNT; i++) {
+            int delay = i * RECONNECT_BURST_DELAY_SECONDS;
+            scheduler.schedule(() -> {
+                for (DeviceSubscription sub : subscriptions) {
+                    sendRealtimeTrigger(sub.deviceSn(), sub.productCode());
+                }
+            }, delay, TimeUnit.SECONDS);
+        }
+    }
 
     private void sendRealtimeTrigger(String deviceSn, String productCode) {
         try {

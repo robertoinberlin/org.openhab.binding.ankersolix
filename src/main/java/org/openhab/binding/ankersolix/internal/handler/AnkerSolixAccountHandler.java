@@ -27,6 +27,7 @@ import org.openhab.binding.ankersolix.internal.api.dto.MqttInfoResponse;
 import org.openhab.binding.ankersolix.internal.api.dto.SiteHomepageResponse;
 import org.openhab.binding.ankersolix.internal.config.AnkerSolixAccountConfiguration;
 import org.openhab.binding.ankersolix.internal.mqtt.AnkerSolixMqttClient;
+import org.openhab.binding.ankersolix.internal.mqtt.MqttConnectionListener;
 import org.openhab.binding.ankersolix.internal.mqtt.MqttMessageListener;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
@@ -38,7 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @NonNullByDefault
-public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttMessageListener {
+public class AnkerSolixAccountHandler extends BaseBridgeHandler
+        implements MqttMessageListener, MqttConnectionListener {
 
     private final Logger logger = LoggerFactory.getLogger(AnkerSolixAccountHandler.class);
 
@@ -137,7 +139,7 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
                 return;
             }
 
-            AnkerSolixMqttClient mqtt = new AnkerSolixMqttClient(this, scheduler);
+            AnkerSolixMqttClient mqtt = new AnkerSolixMqttClient(this, this, scheduler);
             mqtt.connect(mqttInfo);
             this.mqttClient = mqtt;
 
@@ -284,6 +286,7 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
 
         // If MQTT is already connected, subscribe for this device
         AnkerSolixMqttClient mqtt = mqttClient;
+        handler.updateMqttConnected(mqtt != null && mqtt.isConnected());
         if (mqtt != null && mqtt.isConnected()) {
             try {
                 AnkerSolixApiClient client = apiClient;
@@ -320,5 +323,20 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler implements MqttM
         } else {
             logger.trace("Received MQTT data for unregistered device: {}", deviceSn);
         }
+    }
+
+    // --- MqttConnectionListener ---
+
+    @Override
+    public void onMqttConnectionStateChanged(boolean connected) {
+        for (SolarbankHandler handler : childHandlers.values()) {
+            handler.updateMqttConnected(connected);
+        }
+    }
+
+    @Override
+    public void onMqttReconnectNeeded() {
+        logger.info("MQTT reconnect requested, fetching fresh credentials...");
+        refreshMqtt();
     }
 }

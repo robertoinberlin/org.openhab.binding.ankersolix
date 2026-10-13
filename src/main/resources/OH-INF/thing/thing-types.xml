@@ -269,6 +269,10 @@
                 <label>MQTT Last Update</label>
                 <description>Timestamp of the last received MQTT telemetry message</description>
             </channel>
+            <channel id="mqtt-connected" typeId="online-status">
+                <label>MQTT Connected</label>
+                <description>Whether the MQTT connection to the Anker cloud is alive</description>
+            </channel>
         </channels>
     </channel-group-type>
 
