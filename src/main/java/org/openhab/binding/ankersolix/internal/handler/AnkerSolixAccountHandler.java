@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.ankersolix.internal.handler;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -247,11 +248,34 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler
                 }
             }
 
+            // Daily energy every 5th poll, offset from the params/attributes poll (rate limit: 5 requests/min)
+            if (pollCount % 5 == 2) {
+                for (SolarbankHandler handler : childHandlers.values()) {
+                    pollDailyEnergy(client, handler);
+                }
+            }
+
             pollCount++;
             updateStatus(ThingStatus.ONLINE);
         } catch (Exception e) {
             logger.warn("Polling error: {}", e.getMessage());
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+        }
+    }
+
+    private void pollDailyEnergy(AnkerSolixApiClient client, SolarbankHandler handler) {
+        String siteId = handler.getSiteId();
+        String sn = handler.getDeviceSn();
+        if (siteId == null || sn == null) {
+            return;
+        }
+        LocalDate today = LocalDate.now();
+        for (String type : new String[] { "solar_production", "solarbank", "grid" }) {
+            try {
+                handler.updateDailyEnergy(type, today, client.getEnergyAnalysis(siteId, sn, type, today));
+            } catch (Exception e) {
+                logger.debug("Failed to get {} energy analysis: {}", type, e.getMessage());
+            }
         }
     }
 

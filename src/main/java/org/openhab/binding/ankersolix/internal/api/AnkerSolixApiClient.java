@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.ankersolix.internal.api;
 
+import java.time.LocalDate;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -157,6 +158,25 @@ public class AnkerSolixApiClient {
     /**
      * Get HES system running info.
      */
+    /**
+     * Get energy totals for one day (endpoint and fields as used by the anker-solix-api project).
+     *
+     * @param deviceType "solar_production" | "solarbank" | "home_usage" | "grid"
+     */
+    public JsonObject getEnergyAnalysis(String siteId, String deviceSn, String deviceType, LocalDate day)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("site_id", siteId);
+        body.addProperty("device_sn", deviceSn);
+        body.addProperty("device_type", deviceType);
+        body.addProperty("type", "week");
+        body.addProperty("start_time", day.toString());
+        body.addProperty("end_time", day.toString());
+        return postAuthenticated(ApiEndpoints.ENERGY_ANALYSIS, body,
+                new TypeToken<ApiResponse<JsonObject>>() {
+                }.getType());
+    }
+
     public JsonObject getSystemRunningInfo(String siteId) throws Exception {
         JsonObject body = new JsonObject();
         body.addProperty("siteId", siteId);

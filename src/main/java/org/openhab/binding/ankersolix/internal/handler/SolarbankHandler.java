@@ -16,6 +16,7 @@ import static org.openhab.binding.ankersolix.internal.AnkerSolixBindingConstants
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +63,7 @@ public class SolarbankHandler extends BaseThingHandler {
     private @Nullable String deviceSn;
     private final Map<String, Instant> recentCommands = new ConcurrentHashMap<>();
     private Instant lastHesDebugLog = Instant.EPOCH;
+    private final Map<String, Instant> lastEnergyDebugLog = new ConcurrentHashMap<>();
 
     public SolarbankHandler(Thing thing) {
         super(thing);
@@ -315,6 +317,89 @@ public class SolarbankHandler extends BaseThingHandler {
                 new DateTimeType(ZonedDateTime.now()));
         updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_ONLINE_STATUS), OnOffType.ON);
         updateStatus(ThingStatus.ONLINE);
+    }
+
+    /**
+     * Update daily energy channels from an energy_analysis response for today.
+     * The "power" series values are kWh although power_unit says "wh" (see anker-solix-api).
+     */
+    public void updateDailyEnergy(String deviceType, LocalDate day, JsonObject data) {
+        Instant now = Instant.now();
+        if (logger.isDebugEnabled()
+                && lastEnergyDebugLog.getOrDefault(deviceType, Instant.EPOCH).plus(Duration.ofHours(1)).isBefore(now)) {
+            lastEnergyDebugLog.put(deviceType, now);
+            logger.debug("Energy analysis {} for {}: {}", deviceType, day, data);
+        }
+        switch (deviceType) {
+            case "solar_production" -> {
+                Double solar = seriesValueForDay(data, "power", day);
+                if (solar != null) {
+                    updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_SOLAR, solar);
+                }
+            }
+            case "solarbank" -> {
+                // discharge_total is the Solarbank output (solar + battery); the battery discharge is
+                // battery_discharging_total, which equals the "power" series for this type (SB3, 2026-10)
+                Double charge = totalInKwh(data, "charge_total", "charge_unit");
+                Double discharge = totalInKwh(data, "battery_discharging_total", "discharge_unit");
+                if (discharge == null) {
+                    discharge = seriesValueForDay(data, "power", day);
+                }
+                if (charge != null) {
+                    updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_CHARGE, charge);
+                }
+                if (discharge != null) {
+                    updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_DISCHARGE, discharge);
+                }
+            }
+            case "grid" -> {
+                // "power" = solar to grid (negative), "charge_trend" = grid to home
+                Double export = seriesValueForDay(data, "power", day);
+                Double gridImport = seriesValueForDay(data, "charge_trend", day);
+                if (export != null) {
+                    updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_GRID_EXPORT, Math.abs(export));
+                }
+                if (gridImport != null) {
+                    updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_GRID_IMPORT, gridImport);
+                }
+            }
+            default -> logger.trace("Unhandled energy analysis type {}", deviceType);
+        }
+    }
+
+    private static @Nullable Double seriesValueForDay(JsonObject data, String key, LocalDate day) {
+        if (!data.has(key) || !data.get(key).isJsonArray()) {
+            return null;
+        }
+        for (var element : data.getAsJsonArray(key)) {
+            if (element.isJsonObject()) {
+                JsonObject item = element.getAsJsonObject();
+                if (item.has("time") && day.toString().equals(item.get("time").getAsString()) && item.has("value")) {
+                    return parseNumber(item.get("value").getAsString());
+                }
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable Double totalInKwh(JsonObject data, String key, String unitKey) {
+        if (!data.has(key) || data.get(key).isJsonNull()) {
+            return null;
+        }
+        Double value = parseNumber(data.get(key).getAsString());
+        if (value == null) {
+            return null;
+        }
+        String unit = data.has(unitKey) && !data.get(unitKey).isJsonNull() ? data.get(unitKey).getAsString() : "kwh";
+        return "wh".equalsIgnoreCase(unit) ? value / 1000.0 : value;
+    }
+
+    private static @Nullable Double parseNumber(String value) {
+        try {
+            return value.isBlank() ? null : Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void updateHesNumber(JsonObject data, String jsonKey, String group, String channel,
