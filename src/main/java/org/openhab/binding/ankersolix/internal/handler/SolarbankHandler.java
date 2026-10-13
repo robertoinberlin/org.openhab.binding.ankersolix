@@ -265,9 +265,11 @@ public class SolarbankHandler extends BaseThingHandler {
      * This is the primary REST data source for Solarbank 3 Pro devices.
      */
     public void updateFromHes(JsonObject hesData) {
-        // the HES field names below are guesses; log the real response once per hour to find them
+        // The HES field names below are guesses. For a Solarbank 3 Pro (2026-10) this endpoint returns no
+        // device data at all (camelCase summary like "mainSn":"", "batCount":0), so these values come from MQTT.
+        // Log the real response once per hour to check other systems.
         Instant now = Instant.now();
-        if (lastHesDebugLog.plus(Duration.ofHours(1)).isBefore(now)) {
+        if (logger.isDebugEnabled() && lastHesDebugLog.plus(Duration.ofHours(1)).isBefore(now)) {
             lastHesDebugLog = now;
             logger.debug("HES system running info: {}", hesData);
         }
