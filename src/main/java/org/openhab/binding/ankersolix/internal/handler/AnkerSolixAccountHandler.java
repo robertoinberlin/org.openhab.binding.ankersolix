@@ -44,8 +44,11 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler
 
     private final Logger logger = LoggerFactory.getLogger(AnkerSolixAccountHandler.class);
 
-    /** Re-fetch MQTT certificates every 5 minutes to prevent expiry. */
-    private static final int MQTT_REFRESH_INTERVAL_MINUTES = 5;
+    /**
+     * Re-fetch MQTT certificates periodically as a safety net. Dead or silent connections are
+     * detected by the MQTT health check, so this does not need to be frequent.
+     */
+    private static final int MQTT_REFRESH_INTERVAL_MINUTES = 60;
 
     private final HttpClient httpClient;
     private @Nullable AnkerSolixApiClient apiClient;
@@ -163,7 +166,7 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler
      * AWS IoT Core temporary certificates have a short TTL; without periodic
      * refresh the connection silently dies and realtime triggers stop working.
      */
-    private void refreshMqtt() {
+    private synchronized void refreshMqtt() {
         AnkerSolixApiClient client = this.apiClient;
         AnkerSolixMqttClient mqtt = this.mqttClient;
         if (client == null || mqtt == null) {
@@ -176,8 +179,10 @@ public class AnkerSolixAccountHandler extends BaseBridgeHandler
             }
             MqttInfoResponse mqttInfo = client.getMqttInfo();
             mqtt.reconnect(mqttInfo);
-        } catch (Exception e) {
-            logger.warn("Failed to refresh MQTT credentials: {}", e.getMessage());
+        } catch (Throwable t) {
+            // catch errors too (e.g. OutOfMemoryError): an exception escaping here would silently
+            // cancel the scheduled refresh job; the health check retries the reconnect
+            logger.warn("Failed to refresh MQTT credentials: {}", t.toString());
         }
     }
 

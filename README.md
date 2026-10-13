@@ -175,6 +175,7 @@ Channel IDs use the format `ankersolix:solarbank:<bridge>:<thing>:<channel>`.
 | `SB_Online` | Switch | `info#online-status` | REST | R | Device online/offline status                                   |
 | `SB_Last_Update` | DateTime | `info#last-update` | Both | R | Timestamp of last data update                                  |
 | `SB_MQTT_Last_Update` | DateTime | `info#mqtt-last-update` | MQTT | R | Timestamp of last MQTT telemetry message                       |
+| `SB_MQTT_Connected`   | Switch   | `info#mqtt-connected`   | MQTT | R | Whether the MQTT connection to the Anker cloud is alive        |
 
 ## Channels
 
@@ -353,6 +354,7 @@ This saves every command you send to `SB_Home_Load` and automatically restores t
 | `info#online-status`     | Switch   | Device online/offline         |
 | `info#last-update`       | DateTime | Timestamp of last update      |
 | `info#mqtt-last-update`  | DateTime | Timestamp of last MQTT update |
+| `info#mqtt-connected`    | Switch   | Whether the MQTT connection to the Anker cloud is alive |
 
 ## REST Polling vs. MQTT
 

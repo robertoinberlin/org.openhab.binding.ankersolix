@@ -14,6 +14,7 @@ package org.openhab.binding.ankersolix.internal.handler;
 
 import static org.openhab.binding.ankersolix.internal.AnkerSolixBindingConstants.*;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -60,6 +61,7 @@ public class SolarbankHandler extends BaseThingHandler {
     private @Nullable String siteId;
     private @Nullable String deviceSn;
     private final Map<String, Instant> recentCommands = new ConcurrentHashMap<>();
+    private Instant lastHesDebugLog = Instant.EPOCH;
 
     public SolarbankHandler(Thing thing) {
         super(thing);
@@ -246,11 +248,12 @@ public class SolarbankHandler extends BaseThingHandler {
 
         // Daily energy data from site-level info
         SiteHomepageResponse.EnergyInfo energy = homepage.energyInfo;
-        updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_SOLAR, parseDouble(energy.solarProduction));
-        updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_CHARGE, parseDouble(energy.batteryCharge));
-        updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_DISCHARGE, parseDouble(energy.batteryDischarge));
-        updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_GRID_IMPORT, parseDouble(energy.gridImport));
-        updateEnergyChannel(GROUP_ENERGY, CHANNEL_DAILY_GRID_EXPORT, parseDouble(energy.gridExport));
+        // missing or non-numeric values leave the channel untouched instead of reporting 0
+        updateEnergyChannelIfNumber(GROUP_ENERGY, CHANNEL_DAILY_SOLAR, energy.solarProduction);
+        updateEnergyChannelIfNumber(GROUP_ENERGY, CHANNEL_DAILY_CHARGE, energy.batteryCharge);
+        updateEnergyChannelIfNumber(GROUP_ENERGY, CHANNEL_DAILY_DISCHARGE, energy.batteryDischarge);
+        updateEnergyChannelIfNumber(GROUP_ENERGY, CHANNEL_DAILY_GRID_IMPORT, energy.gridImport);
+        updateEnergyChannelIfNumber(GROUP_ENERGY, CHANNEL_DAILY_GRID_EXPORT, energy.gridExport);
 
         // Last update timestamp
         updateState(new ChannelUID(getThing().getUID(), GROUP_INFO, CHANNEL_LAST_UPDATE),
@@ -262,6 +265,12 @@ public class SolarbankHandler extends BaseThingHandler {
      * This is the primary REST data source for Solarbank 3 Pro devices.
      */
     public void updateFromHes(JsonObject hesData) {
+        // the HES field names below are guesses; log the real response once per hour to find them
+        Instant now = Instant.now();
+        if (lastHesDebugLog.plus(Duration.ofHours(1)).isBefore(now)) {
+            lastHesDebugLog = now;
+            logger.debug("HES system running info: {}", hesData);
+        }
 
         // Try to extract power values from known HES fields
         updateHesNumber(hesData, "solar_power", GROUP_POWER, CHANNEL_PV_POWER, Units.WATT);
@@ -356,6 +365,7 @@ public class SolarbankHandler extends BaseThingHandler {
         updateMqttPower(fields, "photovoltaic_power", GROUP_POWER, CHANNEL_PV_POWER);
         updateMqttPower(fields, "output_power", GROUP_POWER, CHANNEL_OUTPUT_POWER);
         updateMqttPower(fields, "ac_output_power_signed", GROUP_POWER, CHANNEL_AC_OUTPUT_POWER);
+        updateMqttPower(fields, "ac_output_power", GROUP_POWER, CHANNEL_AC_OUTPUT_POWER); // 0x0408
         updateMqttPower(fields, "home_demand", GROUP_POWER, CHANNEL_HOME_DEMAND);
 
         // Solar strings
@@ -625,6 +635,17 @@ public class SolarbankHandler extends BaseThingHandler {
         } else {
             updateState(new ChannelUID(getThing().getUID(), group, channel),
                     new QuantityType<>(value, Units.WATT));
+        }
+    }
+
+    private void updateEnergyChannelIfNumber(String group, String channel, @Nullable String value) {
+        if (value == null) {
+            return;
+        }
+        try {
+            updateEnergyChannel(group, channel, Double.parseDouble(value));
+        } catch (NumberFormatException e) {
+            logger.trace("Ignoring non-numeric value for {}: '{}'", channel, value);
         }
     }
 

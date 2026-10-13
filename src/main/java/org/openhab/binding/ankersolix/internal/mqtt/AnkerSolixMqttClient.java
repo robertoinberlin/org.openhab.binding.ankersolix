@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 @NonNullByDefault
@@ -57,7 +58,8 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
     private static final int REALTIME_TRIGGER_INTERVAL_SECONDS = 120;
     private static final int REALTIME_TRIGGER_TIMEOUT_SECONDS = 180;
     private static final int HEALTH_CHECK_INTERVAL_SECONDS = 60;
-    private static final int STALE_THRESHOLD_SECONDS = 360;
+    // 0x0408 state messages arrive about every 300 s even without realtime trigger
+    private static final int STALE_THRESHOLD_SECONDS = 900;
     private static final int RECONNECT_DELAY_SECONDS = 15;
     private static final int RECONNECT_BURST_COUNT = 3;
     private static final int RECONNECT_BURST_DELAY_SECONDS = 10;
@@ -73,7 +75,10 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
     private final List<ScheduledFuture<?>> triggerJobs = new ArrayList<>();
     private @Nullable ScheduledFuture<?> healthCheckJob;
     private @Nullable String appName;
-    private volatile Instant lastMessageReceived = Instant.EPOCH;
+    private String userId = "";
+    private String certificateId = "";
+    /** Last MQTT message that contained device data (not just any message). */
+    private volatile Instant lastDataReceived = Instant.EPOCH;
 
     /** Tracks device subscriptions so they can be restored after reconnection. */
     private final List<DeviceSubscription> subscriptions = new ArrayList<>();
@@ -96,6 +101,8 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
      */
     public void connect(MqttInfoResponse mqttInfo) throws Exception {
         this.appName = mqttInfo.appName;
+        this.userId = mqttInfo.userId;
+        this.certificateId = mqttInfo.certificateId;
 
         String brokerUrl = "ssl://" + mqttInfo.endpointAddr + ":8883";
         String clientId = mqttInfo.thingName + "_" + String.format("%05d", (int) (Math.random() * 10000));
@@ -123,7 +130,8 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         mqttClient.connect(options);
 
         this.client = mqttClient;
-        this.lastMessageReceived = Instant.now();
+        // grace period: data is expected within the stale threshold after (re)connecting
+        this.lastDataReceived = Instant.now();
         logger.info("MQTT connected to {} as {}", mqttInfo.endpointAddr, clientId);
         connectionListener.onMqttConnectionStateChanged(true);
         startHealthCheck();
@@ -228,13 +236,13 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         return mqttClient != null && mqttClient.isConnected();
     }
 
-    public Instant getLastMessageReceived() {
-        return lastMessageReceived;
+    public Instant getLastDataReceived() {
+        return lastDataReceived;
     }
 
-    /** True if no MQTT message arrived within the stale threshold. */
+    /** True if no MQTT message with device data arrived within the stale threshold. */
     public boolean isStale() {
-        return lastMessageReceived.plusSeconds(STALE_THRESHOLD_SECONDS).isBefore(Instant.now());
+        return lastDataReceived.plusSeconds(STALE_THRESHOLD_SECONDS).isBefore(Instant.now());
     }
 
     // --- Command methods ---
@@ -310,7 +318,6 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
             return;
         }
 
-        lastMessageReceived = Instant.now();
         logger.trace("MQTT message on topic: {}, size: {} bytes", topic, message.getPayload().length);
 
         try {
@@ -344,11 +351,19 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
                 return;
             }
 
-            String dataBase64 = payload.get("data").getAsString();
+            // Some messages carry "data" as an array (several parts); they are not decoded yet
+            JsonElement dataElement = payload.get("data");
+            if (!dataElement.isJsonPrimitive()) {
+                logger.debug("MQTT: skipping message on {} with non-string data: {}", topic,
+                        dataElement.isJsonArray() ? "array of " + dataElement.getAsJsonArray().size() : "object");
+                return;
+            }
+            String dataBase64 = dataElement.getAsString();
             byte[] rawData = Base64.getDecoder().decode(dataBase64);
 
             Map<String, Object> fields = parser.parse(rawData, productCode);
             if (!fields.isEmpty()) {
+                lastDataReceived = Instant.now();
                 listener.onDeviceUpdate(deviceSn, fields);
             }
         } catch (Exception e) {
@@ -381,8 +396,21 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
      * Detect a dead connection or a connection that stopped delivering data, and request a reconnect.
      */
     private void checkHealth() {
+        try {
+            doCheckHealth();
+        } catch (Throwable t) {
+            // never let the scheduled job die
+            logger.warn("MQTT health check failed: {}", t.toString());
+        }
+    }
+
+    private void doCheckHealth() {
         MqttClient mqttClient = this.client;
         if (mqttClient == null) {
+            // a previous reconnect failed half way (client already dropped)
+            logger.warn("MQTT health check: no client, requesting reconnect");
+            connectionListener.onMqttConnectionStateChanged(false);
+            connectionListener.onMqttReconnectNeeded();
             return;
         }
         if (!mqttClient.isConnected()) {
@@ -392,7 +420,7 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
             return;
         }
         if (isStale()) {
-            logger.warn("MQTT health check: no messages received for {}s, requesting reconnect with fresh credentials",
+            logger.warn("MQTT health check: no device data received for {}s, requesting reconnect with fresh credentials",
                     STALE_THRESHOLD_SECONDS);
             connectionListener.onMqttReconnectNeeded();
         }
@@ -433,14 +461,16 @@ public class AnkerSolixMqttClient implements MqttCallbackExtended {
         String dataBase64 = Base64.getEncoder().encodeToString(binaryPayload);
 
         JsonObject payloadInner = new JsonObject();
-        payloadInner.addProperty("account_id", "");
+        // the device ignores commands without the owner's account id
+        payloadInner.addProperty("account_id", userId);
         payloadInner.addProperty("device_sn", deviceSn);
         payloadInner.addProperty("data", dataBase64);
 
         JsonObject head = new JsonObject();
         head.addProperty("version", "1.0.0.1");
-        head.addProperty("client_id", mqttClient.getClientId());
-        head.addProperty("sess_id", "");
+        // same client_id / sess_id format as the Anker app (see anker-solix-api)
+        head.addProperty("client_id", "android-" + app + "-" + userId + "-" + certificateId);
+        head.addProperty("sess_id", "1234-5678");
         head.addProperty("msg_seq", 1);
         head.addProperty("seed", 1);
         head.addProperty("timestamp", System.currentTimeMillis() / 1000);

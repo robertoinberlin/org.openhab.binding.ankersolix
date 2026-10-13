@@ -64,6 +64,12 @@ public final class SolarbankFieldMap {
      */
     private static final Map<Integer, FieldDef> A17C5_0405;
 
+    /**
+     * Field map for A17C5 message type 0x0408 (state_info, sent about every 300 s even without a
+     * realtime trigger). Tags from the anker-solix-api project (thomluther), names aligned with 0x0405.
+     */
+    private static final Map<Integer, FieldDef> A17C5_0408;
+
     static {
         Map<Integer, FieldDef> map = new LinkedHashMap<>();
 
@@ -123,11 +129,39 @@ public final class SolarbankFieldMap {
         map.put(0xFE, new FieldDef("msg_timestamp"));
 
         A17C5_0405 = Collections.unmodifiableMap(map);
+
+        Map<Integer, FieldDef> map0408 = new LinkedHashMap<>();
+        map0408.put(0xA2, new FieldDef("device_sn"));
+        map0408.put(0xA7, new FieldDef("battery_soc"));
+        map0408.put(0xA9, new FieldDef("usage_mode"));
+        map0408.put(0xAA, new FieldDef("home_load_preset"));
+        map0408.put(0xAB, new FieldDef("photovoltaic_power"));
+        map0408.put(0xAC, new FieldDef("pv_yield"));
+        map0408.put(0xB1, new FieldDef("home_demand"));
+        map0408.put(0xB6, new FieldDef("battery_power_signed", true));
+        map0408.put(0xB7, new FieldDef("charged_energy"));
+        map0408.put(0xB8, new FieldDef("discharged_energy"));
+        map0408.put(0xBD, new FieldDef("grid_power_signed", true));
+        map0408.put(0xBE, new FieldDef("grid_import_energy"));
+        map0408.put(0xBF, new FieldDef("grid_export_energy"));
+        map0408.put(0xC7, new FieldDef("pv_1_power"));
+        map0408.put(0xC8, new FieldDef("pv_2_power"));
+        map0408.put(0xC9, new FieldDef("pv_3_power"));
+        map0408.put(0xCA, new FieldDef("pv_4_power"));
+        map0408.put(0xCC, new FieldDef("temperature", true));
+        map0408.put(0xD3, new FieldDef("ac_output_power"));
+        map0408.put(0xDC, new FieldDef("max_load"));
+        map0408.put(0xE6, new FieldDef("pv_limit"));
+        map0408.put(0xE7, new FieldDef("ac_input_limit"));
+        A17C5_0408 = Collections.unmodifiableMap(map0408);
     }
 
     public static Map<Integer, FieldDef> getFieldMap(String productCode, int messageType) {
         if ("A17C5".equals(productCode) && messageType == 0x0405) {
             return A17C5_0405;
+        }
+        if ("A17C5".equals(productCode) && messageType == 0x0408) {
+            return A17C5_0408;
         }
         return Collections.emptyMap();
     }

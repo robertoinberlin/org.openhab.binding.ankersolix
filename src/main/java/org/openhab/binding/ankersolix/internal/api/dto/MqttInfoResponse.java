@@ -36,4 +36,7 @@ public class MqttInfoResponse {
 
     @SerializedName("certificate_id")
     public String certificateId = "";
+
+    @SerializedName("user_id")
+    public String userId = "";
 }
